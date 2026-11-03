@@ -11,5 +11,7 @@ __pycache__/
 # Share folder instructions, never an attendee's ingestion export.
 data/*
 !data/README.md
+# Source PDFs are re-downloadable; the committed corpus is their extracted text.
+corpus/.pdf-cache/
 # Built distribution archives are recreated from source when needed.
 dist/

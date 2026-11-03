@@ -3,8 +3,9 @@
 A small local MCP server that gives a compatible chatbot read-only access to
 text ingested on an attendee's computer.
 
-**Current scope:** the MCP connection and a generic record adapter. No dataset,
-chatbot, model provider, document parser or embedding model has been selected.
+**Current scope:** the MCP connection, a generic record adapter, and the workshop
+corpus in [corpus/](corpus/README.md). No chatbot, model provider or embedding
+model has been selected.
 Search is a simple keyword baseline. Ingestion and semantic retrieval come later.
 
 ## Start here
@@ -46,7 +47,8 @@ Before ingestion, `data_status` should report zero records.
 | [pyproject.toml](pyproject.toml) | Project requirements, packaging, and the `rag-symposium` command entry point |
 | [uv.lock](uv.lock) | Generated exact dependency versions and download hashes; let uv manage it |
 | [.gitignore](.gitignore) | Keeps installed dependencies, generated files and local ingestion data off Git |
-| [data/README.md](data/README.md) | Where future ingestion output can live; no dataset is bundled |
+| [corpus/README.md](corpus/README.md) | The workshop documents: 273 K-State crop publications as text, with credit and snapshot details |
+| [data/README.md](data/README.md) | Where future ingestion output can live; no ingestion export is bundled |
 | [tests/test_store.py](tests/test_store.py) | Fast examples of adapter behavior and invalid inputs |
 | [tests/test_server.py](tests/test_server.py) | Which port/origin options are accepted or rejected |
 | [tests/mcp_smoke.py](tests/mcp_smoke.py) | A small MCP client that starts and calls the real stdio server |
