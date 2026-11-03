@@ -1,0 +1,15 @@
+# Machine-specific files and locally installed/generated Python files.
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+# Local credentials stay off Git; an intentional example file may be shared.
+.env
+.env.*
+!.env.example
+# Share folder instructions, never an attendee's ingestion export.
+data/*
+!data/README.md
+# Built distribution archives are recreated from source when needed.
+dist/

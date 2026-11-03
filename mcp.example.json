@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "rag-symposium": {
+      "command": "/absolute/path/to/uv",
+      "args": [
+        "run",
+        "--directory", "/absolute/path/to/RAG-Symposium",
+        "--locked",
+        "rag-symposium",
+        "--data", "/absolute/path/to/RAG-Symposium/data/documents.jsonl"
+      ]
+    }
+  }
+}
