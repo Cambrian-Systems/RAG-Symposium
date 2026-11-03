@@ -60,6 +60,15 @@ class StoreTests(unittest.TestCase):
             offset = result["next_offset"]
         self.assertEqual("".join(parts), text)
 
+    def test_excerpt_centres_on_most_matched_words(self):
+        """A common word near the top should not pull the excerpt away from the answer."""
+        text = "the cover page " + "filler " * 300 + "the seeding rate for wheat is listed here"
+        self.publish([self.record(text=text, metadata={"published": "2025"})])
+        match = self.store.search("the seeding rate for wheat")["matches"][0]
+        self.assertIn("seeding rate for wheat", match["text"])
+        self.assertNotIn("cover", match["text"])
+        self.assertEqual(match["metadata"], {"published": "2025"})
+
     def test_replacement_and_deletion_visible_without_restart(self):
         """Republishing an export changes the next call without recreating the store."""
         self.publish([self.record()])

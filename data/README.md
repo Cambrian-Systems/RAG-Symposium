@@ -1,7 +1,7 @@
 # Local ingestion output
 
-This folder starts with no data. A future ingestion step can publish its
-normalized export as `documents.jsonl`; the server only reads that export.
+This folder starts with no data. `uv run rag-ingest` publishes the workshop
+corpus here as `documents.jsonl`; the server only reads that export.
 The [repo guide](../README.md#data-contract) explains the record fields.
 
 Use `--data` to point to an export elsewhere. Paths supplied through that option

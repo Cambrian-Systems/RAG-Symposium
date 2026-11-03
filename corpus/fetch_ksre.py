@@ -9,7 +9,7 @@ hit the KSRE site live.
 
     uv run corpus/fetch_ksre.py                    # default crop topics
     uv run corpus/fetch_ksre.py --topics wheat     # one topic
-    uv run corpus/fetch_ksre.py --list-only        # manifest only, no PDFs
+    uv run corpus/fetch_ksre.py --list-only        # print listings as JSONL, change nothing
 
 KSRE publications state: "Contents of this publication may be freely reproduced
 for educational purposes. All other rights reserved." Every document keeps its
@@ -140,20 +140,22 @@ def write_doc(pub: Pub, body: str, out: Path) -> None:
         "license_note": "Contents may be freely reproduced for educational purposes. All other rights reserved.",
     }
     lines = ["---", *(f"{k}: {json.dumps(v)}" for k, v in header.items()), "---", "", body, ""]
-    (out / f"{pub.id}.md").write_text("\n".join(lines), encoding="utf-8")
+    (out / f"{pub.id}.md").write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--topics", default=",".join(DEFAULT_TOPICS))
     ap.add_argument("--delay", type=float, default=2.0, help="seconds between requests")
-    ap.add_argument("--list-only", action="store_true")
+    ap.add_argument("--list-only", action="store_true",
+                    help="print listings as JSONL to stdout; write no files")
     ap.add_argument("--out", type=Path, default=HERE)
     args = ap.parse_args()
 
     docs, pdfs = args.out / "docs", args.out / ".pdf-cache"
-    docs.mkdir(parents=True, exist_ok=True)
-    pdfs.mkdir(parents=True, exist_ok=True)
+    if not args.list_only:
+        docs.mkdir(parents=True, exist_ok=True)
+        pdfs.mkdir(parents=True, exist_ok=True)
 
     pubs: dict[str, Pub] = {}
     for topic in args.topics.split(","):
@@ -185,10 +187,22 @@ def main() -> int:
             pub.status = f"error: {type(e).__name__}: {e}"
         print(f"[{n}/{len(pubs)}] {pub.id} {pub.status} {pub.title[:60]}", file=sys.stderr)
 
-    with (args.out / "manifest.jsonl").open("w", encoding="utf-8") as f:
-        for pub in sorted(pubs.values(), key=lambda p: p.id):
-            f.write(json.dumps({**asdict(pub), "credit": pub.credit}) + "\n")
+    lines = [json.dumps({**asdict(pub), "credit": pub.credit}) + "\n"
+             for pub in sorted(pubs.values(), key=lambda p: p.id)]
+    if args.list_only:
+        sys.stdout.writelines(lines)
+        return 0
+    with (args.out / "manifest.jsonl").open("w", encoding="utf-8", newline="\n") as f:
+        f.writelines(lines)
     ok = sum(p.status == "ok" for p in pubs.values())
+    if set(args.topics.split(",")) == set(DEFAULT_TOPICS):
+        # A full run defines the snapshot: drop documents that are no longer
+        # listed or no longer extract, so docs/ always matches the manifest.
+        keep = {p.id for p in pubs.values() if p.status == "ok"}
+        for stale in docs.glob("*.md"):
+            if stale.stem not in keep:
+                stale.unlink()
+                print(f"removed {stale.name}", file=sys.stderr)
     print(f"done: {ok}/{len(pubs)} documents in {docs}", file=sys.stderr)
     return 0
 

@@ -5,9 +5,9 @@ A fixed snapshot of 273 public crop publications from the
 converted from PDF to plain text. Everyone in the workshop searches the same
 files, so results are reproducible and nobody needs to reach the KSRE site.
 
-This folder is source material, not an ingestion export. An ingestion step reads
-`docs/` and publishes records for the server to `data/documents.jsonl`
-(see the [data contract](../README.md#data-contract)).
+This folder is source material, not an ingestion export. `uv run rag-ingest`
+reads `docs/` and publishes records for the server to `data/documents.jsonl`
+(see [Ingestion](../README.md#ingestion)).
 
 ## What is here
 
@@ -66,10 +66,11 @@ because the site rate-limits, so a full run takes 40–60 minutes.
 ```sh
 uv run corpus/fetch_ksre.py                  # all default topics
 uv run corpus/fetch_ksre.py --topics wheat   # one topic
-uv run corpus/fetch_ksre.py --list-only      # manifest only, no PDFs
+uv run corpus/fetch_ksre.py --list-only      # print listings as JSONL, change nothing
 ```
 
 The script declares its own dependency (`pypdf`) inline, so it does not change
 the project's requirements. Downloaded PDFs are cached in `corpus/.pdf-cache/`,
-which Git ignores. A new run produces a different snapshot if KSRE has published
-or revised anything.
+which Git ignores. A full run also removes documents that are no longer listed,
+so `docs/` matches the manifest. A new run produces a different snapshot if KSRE
+has published or revised anything.

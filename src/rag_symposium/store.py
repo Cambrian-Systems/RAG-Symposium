@@ -7,6 +7,7 @@ retrieval can replace this adapter while preserving the tools in server.py.
 """
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 
@@ -63,7 +64,7 @@ class RecordStore:
         records = self.records()
         return {"data_file": str(self.path), "data_available": self.path.is_file(),
                 "record_count": len(records), "search_mode": "keyword",
-                "notice": "No data is bundled. Ingestion must publish records to this file."}
+                "notice": "Records come from an ingestion export; this file is empty until ingestion publishes it."}
 
     @staticmethod
     def reference(record):
@@ -96,18 +97,43 @@ class RecordStore:
         ranked.sort(key=lambda pair: (-len(pair[1]), pair[0]["id"]))
         matches = []
         for record, matched in ranked[:limit]:
-            # Show up to 600 characters near the first hit. If only the title
-            # matched, show the start of the body instead. Escape query tokens
-            # before building a regex so they are treated as literal text.
-            hit = re.search(r"\b(?:" + "|".join(re.escape(t) for t in sorted(matched)) + r")\b",
-                            record["text"], re.IGNORECASE)
-            start = max(0, hit.start() - 100) if hit else 0
+            start = self.excerpt_start(record["text"], matched)
             end = min(len(record["text"]), start + 600)
-            matches.append({**self.reference(record), "text": record["text"][start:end],
+            # Metadata rides along so a client can compare attributes such as
+            # dates before choosing which records to read in full.
+            matches.append({**self.reference(record), "metadata": record.get("metadata", {}),
+                            "text": record["text"][start:end],
                             "offset": start, "next_offset": end if end < len(record["text"]) else None,
                             "matched_terms": sorted(matched)})
         return {"matches": matches, "search_mode": "keyword",
                 "notice": "Matches any query word; ranks by distinct words matched. Not semantic search or answer confidence. Read records before citing claims."}
+
+    @staticmethod
+    def excerpt_start(text: str, matched: set[str]) -> int:
+        """Choose where a 600-character excerpt starts: near the most distinct hits.
+
+        The first hit is often a common word near the top of a long record, so
+        a two-pointer scan finds the 500-character span with the most distinct
+        matched words, keeping 100 characters of lead-in. Ties keep the earliest
+        span. If only the title matched, the excerpt starts at the beginning.
+        """
+        # Escape query tokens before building a regex so they are literal text.
+        pattern = re.compile(r"\b(?:" + "|".join(re.escape(t) for t in sorted(matched)) + r")\b",
+                             re.IGNORECASE)
+        hits = [(m.start(), m.group(0).casefold()) for m in pattern.finditer(text)]
+        best_start, best_count, window, end = 0, 0, Counter(), 0
+        for position, term in hits:
+            # Extend the window to every hit within 500 characters of this one.
+            while end < len(hits) and hits[end][0] < position + 500:
+                window[hits[end][1]] += 1
+                end += 1
+            if len(window) > best_count:
+                best_start, best_count = max(0, position - 100), len(window)
+            # Drop this hit before the window moves on to the next one.
+            window[term] -= 1
+            if not window[term]:
+                del window[term]
+        return best_start
 
     def get(self, document_id: str, offset: int = 0, max_chars: int = 4000) -> dict:
         """Find an ID in the export and return a bounded slice of its text.

@@ -3,10 +3,10 @@
 A small local MCP server that gives a compatible chatbot read-only access to
 text ingested on an attendee's computer.
 
-**Current scope:** the MCP connection, a generic record adapter, and the workshop
-corpus in [corpus/](corpus/README.md). No chatbot, model provider or embedding
-model has been selected.
-Search is a simple keyword baseline. Ingestion and semantic retrieval come later.
+**Current scope:** the MCP connection, a generic record adapter, the workshop
+corpus in [corpus/](corpus/README.md), and ingestion that chunks it into the
+server's export. No chatbot, model provider or embedding model has been selected.
+Search is a simple keyword baseline. Semantic retrieval comes later.
 
 ## Start here
 
@@ -25,6 +25,15 @@ They use temporary artificial records and need no API key, chatbot account,
 model download or data in the repo. A `PASS` line means the connection check
 succeeded; it does not establish a particular chatbot's answer quality.
 
+Then publish the workshop corpus for the server to read:
+
+```sh
+uv run rag-ingest
+```
+
+This writes `data/documents.jsonl`, one record per PDF page. See
+[Ingestion](#ingestion) for the other chunking modes.
+
 To leave a local HTTP endpoint running:
 
 ```sh
@@ -42,14 +51,17 @@ Before ingestion, `data_status` should report zero records.
 | [start-local.py](start-local.py) | A short launcher that forwards options to the existing server in HTTP mode |
 | [src/rag_symposium/server.py](src/rag_symposium/server.py) | Tool registration, descriptions, command-line options, and the two connection modes |
 | [src/rag_symposium/store.py](src/rag_symposium/store.py) | Reading/validating records, keyword search, citations and paginated reads |
+| [src/rag_symposium/ingest.py](src/rag_symposium/ingest.py) | Reading corpus documents, chunking them into records, and publishing the export |
 | [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
 | [mcp.example.json](mcp.example.json) | An example client configuration for launching the server over stdio |
 | [pyproject.toml](pyproject.toml) | Project requirements, packaging, and the `rag-symposium` command entry point |
 | [uv.lock](uv.lock) | Generated exact dependency versions and download hashes; let uv manage it |
 | [.gitignore](.gitignore) | Keeps installed dependencies, generated files and local ingestion data off Git |
+| [.gitattributes](.gitattributes) | Keeps LF line endings on every OS so character offsets match across laptops |
 | [corpus/README.md](corpus/README.md) | The workshop documents: 273 K-State crop publications as text, with credit and snapshot details |
-| [data/README.md](data/README.md) | Where future ingestion output can live; no ingestion export is bundled |
+| [data/README.md](data/README.md) | Where the ingestion export lives; it is generated locally, never committed |
 | [tests/test_store.py](tests/test_store.py) | Fast examples of adapter behavior and invalid inputs |
+| [tests/test_ingest.py](tests/test_ingest.py) | Chunking modes, page provenance, safe publishing, and a check that the real corpus ingests |
 | [tests/test_server.py](tests/test_server.py) | Which port/origin options are accepted or rejected |
 | [tests/mcp_smoke.py](tests/mcp_smoke.py) | A small MCP client that starts and calls the real stdio server |
 | [tests/http_smoke.py](tests/http_smoke.py) | Real HTTP calls, browser-origin checks, and server cleanup |
@@ -62,13 +74,15 @@ JSON does not allow comments, so the configuration example is explained below.
 
 ```mermaid
 flowchart LR
-    I[Future ingestion] --> D[Local JSONL export]
+    K[corpus/docs] --> I[ingest.py]
+    I --> D[Local JSONL export]
     C[Chatbot / MCP client] <-->|Tool calls and evidence| S[server.py]
     S <-->|Python methods and results| R[store.py]
     R -->|Read only| D
 ```
 
-- **Ingestion** will extract and prepare text. It is not implemented here yet.
+- **Ingestion** splits the corpus text into records and keeps each one's source,
+  pages and dates. It runs once, before the server is used, not on each question.
 - **The store** reads the prepared text, finds matching records and retains sources.
 - **MCP** describes callable tools and carries requests/results between the client
   and this server. It does not generate answers or create embeddings.
@@ -166,7 +180,7 @@ client settings, then confirm the three tools appear.
 | Tool | Inputs | What it returns |
 | --- | --- | --- |
 | `data_status` | None | Configured file, existence, record count and search mode |
-| `search_documents` | `query`; optional `limit` (default 5, maximum 10) | Source-linked excerpts up to 600 characters each, matching terms, and read offsets |
+| `search_documents` | `query`; optional `limit` (default 5, maximum 10) | Source-linked excerpts up to 600 characters each, metadata, matching terms, and read offsets |
 | `get_document` | `document_id`; optional `offset` and `max_chars` | Source, metadata and a text slice; `next_offset` identifies the next unread character |
 
 `get_document` defaults to 4,000 characters per call, with a maximum of 10,000.
@@ -183,6 +197,32 @@ Start at offset 0 to read from the beginning. Follow `next_offset` until it is
 The helper and example client config set the working directory to this repo.
 If you invoke the installed server from elsewhere, supply an absolute `--data` path.
 
+## Ingestion
+
+`rag-ingest` reads every document in `corpus/docs/`, splits it into records
+and publishes `data/documents.jsonl` in one step. A running server sees the new
+export on its next tool call.
+
+| Mode | One record per | Record ID | Records from the workshop corpus |
+| --- | --- | --- | --- |
+| `page` (default) | PDF page | `MF991-p3` | 3,274 |
+| `window` | ~1,500-character window, 200 characters shared with the next | `MF991-w7` | 7,128 |
+| `document` | Publication | `MF991` | 273 |
+
+```sh
+uv run rag-ingest --mode window --size 1000 --overlap 150
+uv run rag-ingest --mode document --output /tmp/whole-docs.jsonl
+```
+
+Every record's metadata carries `document_id`, `pages`, `chunk_index`,
+`published`, `revised`, `topics` and `credit`, so an answer can cite a page and
+prefer a newer publication. Blank pages are skipped. Chunking changes what search
+can return: a page can split a table from its heading, a window can split a
+sentence, and a whole publication buries one paragraph in dozens of pages.
+
+Ingestion validates every record against the data contract below before
+publishing, so a bad corpus fails here and the previous export stays in place.
+
 ## Data contract
 
 The adapter expects JSONL: one complete JSON object per line. No source-format
@@ -198,7 +238,7 @@ or dataset choice is implied. This illustrative shape is not a bundled export:
 | `title` | Yes | Nonempty display title |
 | `text` | Yes | Nonempty extracted text |
 | `source` | Yes | Nonempty reference to the original, such as a URL or filename |
-| `metadata` | No | JSON object for future ingestion-supplied attributes |
+| `metadata` | No | JSON object of ingestion-supplied attributes, returned by search and reads |
 
 An adapter can emit a record per document or passage. The server treats each as
 an addressable record and returns its source string without following it.
@@ -245,7 +285,7 @@ The tests do not run a language model or prove a chatbot's claims are supported.
 | Symptom | Where to look |
 | --- | --- |
 | `uv` not found | Install uv and check the absolute executable path in the client config |
-| Zero records | Call `data_status`; check the selected export path and whether ingestion has run |
+| Zero records | Call `data_status`; check the selected export path and run `uv run rag-ingest` |
 | Invalid data on a particular line | Validate that JSONL record against the data contract above |
 | No keyword matches | Try words actually present in the title/text; semantic retrieval is not implemented |
 | Port already in use | Stop the other listener or choose another `--port` and update the client URL |
