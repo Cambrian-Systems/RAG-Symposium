@@ -1,0 +1,197 @@
+"""Score search against a set of questions with known answers, with no model involved.
+
+A question file is JSONL. Each line names the publications (and optionally the
+pages) that hold the answer. rag-eval runs every question through the same
+search the server uses and reports how often the right record came back:
+
+- hit@1: the first result is a right one.
+- hit@k: a right one is somewhere in the top k (default 5).
+- MRR: mean reciprocal rank. 1 for first place, 1/2 for second, 0 for a miss.
+
+Questions with an empty `expect` list have no answer in the data. For those,
+the score is whether search warned that its results don't cover the question.
+This measures retrieval only: whether the evidence reached the agent, not
+whether the agent's answer was right.
+"""
+import argparse
+import json
+import os
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+from .store import SEARCH_MODES, RecordStore
+
+
+def load_questions(path: Path) -> list[dict]:
+    """Read and check a question file, naming the line of any problem."""
+    questions, ids = [], set()
+    with path.open(encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, 1):
+            if not line.strip():
+                continue
+            try:
+                question = json.loads(line)
+                if not isinstance(question, dict):
+                    raise ValueError("each line must be a JSON object")
+                for field in ("id", "question"):
+                    if not isinstance(question.get(field), str) or not question[field].strip():
+                        raise ValueError(f"{field} must be nonempty text")
+                if question["id"] in ids:
+                    raise ValueError("duplicate question id")
+                expect = question.get("expect")
+                if not isinstance(expect, list) or not all(isinstance(e, str) for e in expect):
+                    raise ValueError("expect must be a list of publication IDs ([] if unanswerable)")
+                pages = question.get("pages", [])
+                if not isinstance(pages, list) or not all(type(p) is int for p in pages):
+                    raise ValueError("pages must be a list of page numbers")
+            except (ValueError, TypeError) as exc:
+                raise ValueError(f"{path}, line {line_number}: {exc}") from exc
+            ids.add(question["id"])
+            questions.append(question)
+    if not questions:
+        raise ValueError(f"{path} has no questions")
+    return questions
+
+
+def is_right(match: dict, question: dict) -> bool:
+    """A result counts if it comes from an expected publication and, when the
+    question names pages, covers one of them."""
+    metadata = match.get("metadata", {})
+    document = metadata.get("document_id", match["id"])
+    if document not in question["expect"]:
+        return False
+    pages = question.get("pages")
+    return not pages or bool(set(pages) & set(metadata.get("pages", [])))
+
+
+def rank_of(matches: list[dict], question: dict) -> int | None:
+    """1-based position of the first right result, or None if none came back.
+
+    With "all": true, every expected publication must appear, and the rank is
+    the position where the last one showed up.
+    """
+    if question.get("all"):
+        needed, found = set(question["expect"]), set()
+        for position, match in enumerate(matches, 1):
+            if is_right(match, question):
+                found.add(match.get("metadata", {}).get("document_id", match["id"]))
+                if found == needed:
+                    return position
+        return None
+    for position, match in enumerate(matches, 1):
+        if is_right(match, question):
+            return position
+    return None
+
+
+def evaluate(store: RecordStore, questions: list[dict], k: int = 5) -> dict:
+    """Run every question once and collect per-question results and totals."""
+    rows = []
+    for question in questions:
+        result = store.search(question["question"], k)
+        matches = result["matches"]
+        row = {"id": question["id"], "question": question["question"],
+               "category": question.get("category", "general"), "expect": question["expect"],
+               "top": [m["id"] for m in matches]}
+        if question["expect"]:
+            row["rank"] = rank_of(matches, question)
+        else:
+            # Without an answer to find, the useful behavior is a warning.
+            row["flagged"] = not matches or bool(result.get("missing_terms"))
+            row["missing_terms"] = result.get("missing_terms", [])
+        rows.append(row)
+    return {"mode": store.mode, "k": k, "summary": summarize(rows), "questions": rows}
+
+
+def summarize(rows: list[dict]) -> dict:
+    """Totals overall and per category. Rates are fractions from 0 to 1."""
+    def scores(group):
+        answerable = [r for r in group if "rank" in r]
+        unanswerable = [r for r in group if "flagged" in r]
+        ranks = [r["rank"] for r in answerable]
+        n = len(answerable)
+        return {"answerable": n,
+                "hit@1": sum(r == 1 for r in ranks) / n if n else None,
+                "hit@k": sum(r is not None for r in ranks) / n if n else None,
+                "mrr": sum(1 / r for r in ranks if r) / n if n else None,
+                "unanswerable": len(unanswerable),
+                "flagged": sum(r["flagged"] for r in unanswerable)}
+    categories = defaultdict(list)
+    for row in rows:
+        categories[row["category"]].append(row)
+    return {"all": scores(rows), "categories": {c: scores(g) for c, g in sorted(categories.items())}}
+
+
+def percent(value) -> str:
+    return "  -  " if value is None else f"{value * 100:4.0f}%"
+
+
+def report(results: list[dict], show: str) -> str:
+    """Plain-text tables: one line per mode, then per category, then misses."""
+    k = results[0]["k"]
+    lines = [f"{'mode':<10} {'hit@1':>6} {f'hit@{k}':>6} {'MRR':>5}   not-found warnings"]
+    for result in results:
+        s = result["summary"]["all"]
+        mrr = "  -  " if s["mrr"] is None else f"{s['mrr']:.2f}"
+        lines.append(f"{result['mode']:<10} {percent(s['hit@1']):>6} {percent(s['hit@k']):>6} "
+                     f"{mrr:>5}   {s['flagged']}/{s['unanswerable']}")
+    lines.append(f"\n({results[0]['summary']['all']['answerable']} answerable questions, "
+                 f"{results[0]['summary']['all']['unanswerable']} with no answer in the data)")
+    lines.append(f"\nhit@{k} by category")
+    categories = results[0]["summary"]["categories"]
+    lines.append(f"{'category':<16}" + "".join(f"{r['mode']:>12}" for r in results))
+    for category in categories:
+        cells = []
+        for result in results:
+            s = result["summary"]["categories"][category]
+            cells.append(f"{s['flagged']}/{s['unanswerable']} warned" if not s["answerable"]
+                         else percent(s["hit@k"]).strip())
+        lines.append(f"{category:<16}" + "".join(f"{c:>12}" for c in cells))
+    for result in results:
+        rows = [r for r in result["questions"]
+                if show == "all" or (show == "misses" and (r.get("rank") != 1 and not r.get("flagged")))]
+        if not rows:
+            continue
+        lines.append(f"\n{result['mode']}: {'every question' if show == 'all' else 'not ranked first'}")
+        for row in rows:
+            if "rank" in row:
+                outcome = f"rank {row['rank']}" if row["rank"] else "MISS"
+            else:
+                outcome = "warned" if row["flagged"] else "no warning"
+            lines.append(f"  {row['id']:<5} {outcome:<10} {row['question']}")
+            lines.append(f"        expected {', '.join(row['expect']) or '(no answer)'}; "
+                         f"got {', '.join(row['top'][:3]) or 'nothing'}")
+    return "\n".join(lines)
+
+
+def main():
+    """Parse options, score each requested search mode, and print the comparison."""
+    parser = argparse.ArgumentParser(description="Score search results against known answers")
+    parser.add_argument("--questions", type=Path, default=Path("evals/starter.jsonl"),
+                        help="Question file (default: evals/starter.jsonl)")
+    parser.add_argument("--data", type=Path,
+                        default=Path(os.environ.get("RAG_DATA_PATH", "data/documents.jsonl")),
+                        help="Ingestion export to search (default: data/documents.jsonl)")
+    parser.add_argument("--mode", choices=SEARCH_MODES, action="append",
+                        help="Search mode to score; repeat to compare (default: all)")
+    parser.add_argument("-k", type=int, default=5, help="How many results count (1-10, default 5)")
+    parser.add_argument("--show", choices=("none", "misses", "all"), default="misses",
+                        help="Which questions to list under the scores (default: misses)")
+    parser.add_argument("--json", action="store_true", help="Print full results as JSON")
+    args = parser.parse_args()
+    if not 1 <= args.k <= 10:
+        parser.error("-k must be between 1 and 10")
+    questions = load_questions(args.questions)
+    stores = [RecordStore(args.data, mode) for mode in (args.mode or SEARCH_MODES)]
+    if not stores[0].status()["record_count"]:
+        parser.error(f"{args.data} has no records. Run `uv run rag-ingest` first.")
+    results = [evaluate(store, questions, args.k) for store in stores]
+    if args.json:
+        print(json.dumps(results, indent=2))
+    else:
+        print(report(results, args.show))
+
+
+if __name__ == "__main__":
+    main()

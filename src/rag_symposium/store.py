@@ -4,19 +4,68 @@ JSONL means one JSON object per line. This adapter reads small exports into
 memory on every call, validates them, and returns source-linked text. It never
 writes the file or fetches the source references. Future ingestion/semantic
 retrieval can replace this adapter while preserving the tools in server.py.
+
+Two search modes share the same records and citations:
+- keyword: counts distinct query words in each record. Simple and easy to fool.
+- bm25: weighs rare words above common ones, boosts titles, and puts records
+  whose publication ID is in the query first. It also reports query words no
+  result contains, so a client can notice when the evidence isn't there.
 """
 import json
+import math
 import re
 from collections import Counter
 from pathlib import Path
+
+SEARCH_MODES = ("keyword", "bm25")
+
+# Words too common to say anything about a record. BM25 already gives them
+# little weight; this list only keeps them out of matched/missing term reports.
+STOPWORDS = frozenset("""
+a about after all also am an and any are as at be been before being between both
+but by can could did do does doing during each for from had has have how i if in
+into is it its me more most my no not of on or other our should so some such than
+that the their them then there these they this those to too under up very was we
+were what when where which while who whom why will with would you your
+""".split())
+
+# Standard BM25 constants: K1 limits how much repeating a word helps, B scales
+# for record length. TITLE_WEIGHT is how much a title match counts next to text.
+K1, B, TITLE_WEIGHT = 1.2, 0.75, 0.5
+
+
+def tokens(text: str) -> list[str]:
+    """Lowercase word/number tokens, the same way for queries and records."""
+    return re.findall(r"\w+", text.casefold())
+
+
+def stem(word: str) -> str:
+    """Fold simple English plurals together: fungicides -> fungicide, varieties -> variety.
+
+    This is the Harman "S" stemmer, the lightest common stemmer. It leaves
+    other endings (rated vs ratings, seeding vs seed) for semantic search.
+    """
+    if len(word) <= 3 or not word.isalpha():
+        return word
+    if word.endswith("ies") and not word.endswith(("eies", "aies")):
+        return word[:-3] + "y"
+    if word.endswith("es") and not word.endswith(("aes", "ees", "oes")):
+        return word[:-1]
+    if word.endswith("s") and not word.endswith(("us", "ss")):
+        return word[:-1]
+    return word
 
 
 class RecordStore:
     """One configured file, shared by the MCP status/search/read tools."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, mode: str = "keyword"):
         """Expand ~ and anchor the path now, independent of later directory changes."""
+        if mode not in SEARCH_MODES:
+            raise ValueError(f"search mode must be one of {', '.join(SEARCH_MODES)}")
         self.path = path.expanduser().resolve()
+        self.mode = mode
+        self._index, self._index_key = None, None
 
     def records(self) -> list[dict]:
         """Load a complete valid export, or fail with the offending line number."""
@@ -63,7 +112,7 @@ class RecordStore:
         """Distinguish a missing export from an existing empty export."""
         records = self.records()
         return {"data_file": str(self.path), "data_available": self.path.is_file(),
-                "record_count": len(records), "search_mode": "keyword",
+                "record_count": len(records), "search_mode": self.mode,
                 "notice": "Records come from an ingestion export; this file is empty until ingestion publishes it."}
 
     @staticmethod
@@ -73,20 +122,37 @@ class RecordStore:
                 "citation": f"[{record['id']}]"}
 
     def search(self, query: str, limit: int = 5) -> dict:
-        """Return bounded excerpts ranked by distinct query words found in each record.
-
-        This is a transparent keyword baseline, not embedding/semantic search.
-        A match provides candidate evidence, not proof that a claim is correct.
-        """
+        """Check the request, then rank records with the configured search mode."""
         if not isinstance(query, str) or not 1 <= len(query.strip()) <= 2000:
             raise ValueError("query must contain 1–2000 characters")
         if type(limit) is not int or not 1 <= limit <= 10:
             raise ValueError("limit must be between 1 and 10")
         # casefold normalizes case; \w+ extracts word/number tokens. Sets mean
         # repeating a word does not inflate its importance. Phrases are not kept.
-        terms = set(re.findall(r"\w+", query.casefold()))
+        terms = set(tokens(query))
         if not terms:
             raise ValueError("query must contain a word or number")
+        if self.mode == "bm25":
+            return self.search_bm25(terms, limit)
+        return self.search_keyword(terms, limit)
+
+    def match(self, record: dict, matched: set[str], **extra) -> dict:
+        """Shape one search result: reference, metadata and an excerpt near the hits."""
+        start = self.excerpt_start(record["text"], matched)
+        end = min(len(record["text"]), start + 600)
+        # Metadata rides along so a client can compare attributes such as
+        # dates before choosing which records to read in full.
+        return {**self.reference(record), "metadata": record.get("metadata", {}),
+                "text": record["text"][start:end],
+                "offset": start, "next_offset": end if end < len(record["text"]) else None,
+                "matched_terms": sorted(matched), **extra}
+
+    def search_keyword(self, terms: set[str], limit: int) -> dict:
+        """Return bounded excerpts ranked by distinct query words found in each record.
+
+        This is a transparent keyword baseline, not embedding/semantic search.
+        A match provides candidate evidence, not proof that a claim is correct.
+        """
         ranked = []
         for record in self.records():
             words = set(re.findall(r"\w+", (record["title"] + " " + record["text"]).casefold()))
@@ -95,18 +161,103 @@ class RecordStore:
                 ranked.append((record, matched))
         # More distinct matches sort first; ID breaks ties deterministically.
         ranked.sort(key=lambda pair: (-len(pair[1]), pair[0]["id"]))
-        matches = []
-        for record, matched in ranked[:limit]:
-            start = self.excerpt_start(record["text"], matched)
-            end = min(len(record["text"]), start + 600)
-            # Metadata rides along so a client can compare attributes such as
-            # dates before choosing which records to read in full.
-            matches.append({**self.reference(record), "metadata": record.get("metadata", {}),
-                            "text": record["text"][start:end],
-                            "offset": start, "next_offset": end if end < len(record["text"]) else None,
-                            "matched_terms": sorted(matched)})
+        matches = [self.match(record, matched) for record, matched in ranked[:limit]]
         return {"matches": matches, "search_mode": "keyword",
                 "notice": "Matches any query word; ranks by distinct words matched. Not semantic search or answer confidence. Read records before citing claims."}
+
+    def index(self) -> dict:
+        """Count words per record once per export version, for BM25 scoring.
+
+        Tokenizing thousands of pages takes about a second, so the counts are
+        kept until the file's size or modification time changes.
+        """
+        try:
+            stat = self.path.stat()
+            key = (stat.st_mtime_ns, stat.st_size)
+        except FileNotFoundError:
+            key = None
+        if self._index is not None and key == self._index_key:
+            return self._index
+        records = self.records()
+        entries = []
+        for record in records:
+            metadata = record.get("metadata", {})
+            ids = {record["id"].casefold()}
+            if isinstance(metadata.get("document_id"), str):
+                ids.add(metadata["document_id"].casefold())
+            entries.append({"record": record, "text": Counter(map(stem, tokens(record["text"]))),
+                            "title": Counter(map(stem, tokens(record["title"]))), "ids": ids})
+        index = {"entries": entries}
+        for field in ("text", "title"):
+            # Document frequency: how many records contain each word at least once.
+            frequency = Counter()
+            for entry in entries:
+                frequency.update(entry[field].keys())
+            lengths = [sum(entry[field].values()) for entry in entries]
+            index[field] = {"df": frequency, "avg": (sum(lengths) / len(lengths)) if lengths else 0}
+        self._index, self._index_key = index, key
+        return index
+
+    @staticmethod
+    def bm25(counts: Counter, terms: set[str], stats: dict, total: int) -> float:
+        """Score one field: rare words count more, and long records don't win by size."""
+        length, score = sum(counts.values()), 0.0
+        for term in terms:
+            tf = counts.get(term, 0)
+            if not tf:
+                continue
+            df = stats["df"][term]
+            idf = math.log(1 + (total - df + 0.5) / (df + 0.5))
+            norm = 1 - B + B * length / stats["avg"] if stats["avg"] else 1
+            score += idf * tf * (K1 + 1) / (tf + K1 * norm)
+        return score
+
+    def search_bm25(self, terms: set[str], limit: int) -> dict:
+        """Rank by BM25 over text and title, with exact publication IDs first.
+
+        Results also say which meaningful query words they lack. A word that no
+        result contains is a sign the answer may not be in the data at all.
+        """
+        index = self.index()
+        entries, total = index["entries"], len(index["entries"])
+        # Reports use the words as typed; scoring uses their stems.
+        typed = {}
+        for term in sorted(terms):
+            typed.setdefault(stem(term), term)
+        ids, terms = terms, set(typed)
+        content = {t for t in terms if typed[t] not in STOPWORDS} or terms
+        ranked = []
+        for entry in entries:
+            present = {t for t in terms if t in entry["text"] or t in entry["title"]}
+            # Someone who types a publication ID means that publication, not
+            # every page that cites it. ID matches sort ahead of everything else.
+            id_match = bool(ids & entry["ids"])
+            if not id_match and not present & content:
+                continue
+            score = (self.bm25(entry["text"], terms, index["text"], total)
+                     + TITLE_WEIGHT * self.bm25(entry["title"], terms, index["title"], total))
+            ranked.append((id_match, score, entry["record"], present))
+        ranked.sort(key=lambda item: (-item[0], -item[1], item[2]["id"]))
+        matches, covered = [], set()
+        for id_match, score, record, present in ranked[:limit]:
+            covered |= present
+            # The excerpt finder looks for whole words, so give it the forms
+            # this record actually contains, plural or not.
+            words = {w for w in set(tokens(record["title"] + " " + record["text"]))
+                     if stem(w) in (present & content or present)}
+            matches.append(self.match(record, words, score=round(score, 3), id_match=id_match,
+                                      missing_terms=sorted(typed[t] for t in content - present)))
+        missing = sorted(typed[t] for t in content - covered)
+        unknown = sorted(typed[t] for t in content
+                         if not index["text"]["df"][t] and not index["title"]["df"][t])
+        notice = ("BM25: rare words count more than common ones; titles are boosted; "
+                  "exact publication IDs rank first. Scores compare results for this query only. "
+                  "Read records before citing claims.")
+        if missing:
+            notice += (f" No result contains: {', '.join(missing)}. The answer may not be "
+                       "in the data; say so unless the text you read supports it.")
+        return {"matches": matches, "search_mode": "bm25", "missing_terms": missing,
+                "unknown_terms": unknown, "notice": notice}
 
     @staticmethod
     def excerpt_start(text: str, matched: set[str]) -> int:

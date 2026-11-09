@@ -5,8 +5,9 @@ text ingested on an attendee's computer.
 
 **Current scope:** the MCP connection, a generic record adapter, the workshop
 corpus in [corpus/](corpus/README.md), and ingestion that chunks it into the
-server's export. No chatbot, model provider or embedding model has been selected.
-Search is a simple keyword baseline. Semantic retrieval comes later.
+server's export, two search modes (a naive keyword baseline and BM25), and
+`rag-eval` for scoring them. No chatbot, model provider or embedding model has
+been selected. Semantic retrieval comes later.
 
 ## Start here
 
@@ -52,6 +53,8 @@ Before ingestion, `data_status` should report zero records.
 | [src/rag_symposium/server.py](src/rag_symposium/server.py) | Tool registration, descriptions, command-line options, and the two connection modes |
 | [src/rag_symposium/store.py](src/rag_symposium/store.py) | Reading/validating records, keyword search, citations and paginated reads |
 | [src/rag_symposium/ingest.py](src/rag_symposium/ingest.py) | Reading corpus documents, chunking them into records, and publishing the export |
+| [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | Scoring search modes against questions with known answers |
+| [evals/starter.jsonl](evals/starter.jsonl) | 26 starter questions with the publications that answer them |
 | [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
 | [mcp.example.json](mcp.example.json) | An example client configuration for launching the server over stdio |
 | [pyproject.toml](pyproject.toml) | Project requirements, packaging, and the `rag-symposium` command entry point |
@@ -63,6 +66,7 @@ Before ingestion, `data_status` should report zero records.
 | [tests/test_store.py](tests/test_store.py) | Fast examples of adapter behavior and invalid inputs |
 | [tests/test_ingest.py](tests/test_ingest.py) | Chunking modes, page provenance, safe publishing, and a check that the real corpus ingests |
 | [tests/test_server.py](tests/test_server.py) | Which port/origin options are accepted or rejected |
+| [tests/test_evaluate.py](tests/test_evaluate.py) | How `rag-eval` counts a hit, a miss and a not-found warning |
 | [tests/mcp_smoke.py](tests/mcp_smoke.py) | A small MCP client that starts and calls the real stdio server |
 | [tests/http_smoke.py](tests/http_smoke.py) | Real HTTP calls, browser-origin checks, and server cleanup |
 
@@ -190,6 +194,7 @@ Start at offset 0 to read from the beginning. Follow `next_offset` until it is
 | Launch option | Default / effect |
 | --- | --- |
 | `--transport stdio` or `--transport http` | Default `stdio`; the helper selects `http` |
+| `--search keyword` or `--search bm25` | Default `keyword`, or `RAG_SEARCH_MODE`; see [Search modes](#search-modes) |
 | `--data PATH` | Overrides `RAG_DATA_PATH`, otherwise uses `data/documents.jsonl` relative to the server's working directory |
 | `--port NUMBER` | HTTP port, default 8765 |
 | `--allow-origin ORIGIN` | HTTP-only, repeatable; allows a specific browser origin |
@@ -250,16 +255,68 @@ Publish a complete temporary export and rename it over the old file to avoid
 readers seeing a half-written update. Malformed JSON, missing fields and duplicate
 IDs produce explicit tool errors; there is no last-good-export cache.
 
-Keyword ranking counts distinct query words present in title/text; any word can
-match. Repeated words do not increase the rank, and ID breaks ties. The adapter
-reads small exports into memory; it is not designed for large indexes or semantic
-matching. Future retrieval can replace `RecordStore` while keeping the tool names.
+The adapter reads small exports into memory; it is not designed for large indexes
+or semantic matching. Future retrieval can replace `RecordStore` while keeping the
+tool names.
+
+## Search modes
+
+Both modes search the same records and return the same citations. Pick one when
+the server starts (`--search bm25`), then reconnect the client.
+
+| Mode | How it ranks | What fools it |
+| --- | --- | --- |
+| `keyword` (default) | Counts distinct query words in the title and text. Every word counts the same, and ID breaks ties | Common words (*the, for, in*) count as much as *cheatgrass*; a page that cites `MF991` ties with `MF991` itself |
+| `bm25` | Rare words count more than common ones, long records don't win by size, title matches get a boost, and records whose publication ID is in the query come first. Simple plurals match (*fungicides* finds *fungicide*) | Different words for the same thing (*cheat* vs *downy brome*), tables, and anything that needs meaning rather than matching words |
+
+`bm25` results also carry a `score`, an `id_match` flag and each result's
+`missing_terms`. The response lists `missing_terms` (meaningful query words no
+returned result contains) and `unknown_terms` (words in no record at all), and
+its notice says so. That warning only catches missing *words*. A question about
+2026 yields still matches the 2026 variety guide, so search can't tell you the
+answer isn't there; the agent has to read the text and say so.
+
+## Measure retrieval with rag-eval
+
+```sh
+uv run rag-eval
+uv run rag-eval --mode bm25 --show all
+uv run rag-eval --questions my-questions.jsonl --data /tmp/whole-docs.jsonl
+```
+
+`rag-eval` runs each question in `evals/starter.jsonl` through every search mode
+against the current export and prints a table. No model is involved:
+
+| Number | Meaning |
+| --- | --- |
+| hit@1 | Share of questions where the first result came from a right publication |
+| hit@5 | Share where a right one was anywhere in the top 5 (change with `-k`) |
+| MRR | Average of 1/rank: 1 for first place, 0.5 for second, 0 for a miss |
+| not-found warnings | For questions with no answer in the data, how many got a `missing_terms` warning |
+
+Each question line names the publications that answer it:
+
+```json
+{"id": "s05", "category": "fact", "question": "What three yield components are used to estimate wheat yield?", "expect": ["MF3044"], "pages": [1]}
+```
+
+`pages` is optional; when present, a result must cover one of those pages.
+`"all": true` requires every listed publication in the top k, for questions that
+need two sources. An empty `expect` list means the data has no answer.
+
+The score measures whether the evidence reached the agent, not whether the
+agent's answer was right. Agents also rewrite questions into their own search
+queries, so a question that fails here can still succeed in a chat, and the
+other way round. Compare modes and chunking (`rag-ingest --mode ...`, then
+`rag-eval --data ...`) on the same questions; a change that fixes one question
+can break another.
 
 ## Verify and explore
 
 ```sh
 uv run python -m unittest discover -s tests -v
 uv run python tests/mcp_smoke.py
+uv run python tests/mcp_smoke.py --search bm25
 uv run python tests/http_smoke.py
 ```
 

@@ -109,5 +109,65 @@ class StoreTests(unittest.TestCase):
             self.store.get("/etc/passwd")
 
 
+class Bm25Tests(unittest.TestCase):
+    """The bm25 mode: same records and citations, better ranking, coverage warnings."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.path = Path(folder.name) / "records.jsonl"
+        self.store = RecordStore(self.path, "bm25")
+
+    def publish(self, records):
+        self.path.write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
+
+    @staticmethod
+    def record(id, text, title="Test record", **metadata):
+        return dict(id=id, title=title, text=text, source="test-source", metadata=metadata)
+
+    def test_rare_words_outrank_common_ones(self):
+        """Keyword mode ties these on word count; bm25 lets the rare word decide."""
+        filler = [self.record(f"f{i}", "how do i control the weeds in wheat") for i in range(5)]
+        self.publish([*filler, self.record("target", "cheatgrass is a weed in wheat")])
+        query = "how do i control cheatgrass in wheat"
+        self.assertEqual(self.store.search(query)["matches"][0]["id"], "target")
+        self.assertNotEqual(RecordStore(self.path).search(query)["matches"][0]["id"], "target")
+
+    def test_publication_id_ranks_its_own_pages_first(self):
+        """Pages that cite an ID should not outrank the publication itself."""
+        self.publish([self.record("EP1-p1", "see MF9 and MF9 again for MF9 details", document_id="EP1"),
+                      self.record("MF9-p1", "variety guide text", document_id="MF9")])
+        match = self.store.search("MF9")["matches"][0]
+        self.assertEqual(match["id"], "MF9-p1")
+        self.assertTrue(match["id_match"])
+
+    def test_plurals_match_and_excerpt_uses_the_word_as_written(self):
+        self.publish([self.record("a", "x " * 400 + "these fungicides protect wheat")])
+        match = self.store.search("fungicide")["matches"][0]
+        self.assertEqual(match["matched_terms"], ["fungicides"])
+        self.assertIn("fungicides protect", match["text"])
+
+    def test_reports_words_no_result_contains(self):
+        self.publish([self.record("a", "pistachio trees"), self.record("b", "wheat in kansas")])
+        result = self.store.search("can I grow quinoa in kansas")
+        self.assertEqual(result["missing_terms"], ["grow", "quinoa"])
+        self.assertEqual(result["unknown_terms"], ["grow", "quinoa"])
+        self.assertIn("No result contains: grow, quinoa", result["notice"])
+        self.assertEqual(result["matches"][0]["missing_terms"], ["grow", "quinoa"])
+        self.assertEqual(self.store.search("wheat kansas")["missing_terms"], [])
+
+    def test_republished_export_rebuilds_the_index(self):
+        self.publish([self.record("a", "alpha")])
+        self.assertEqual(self.store.search("alpha")["matches"][0]["id"], "a")
+        replacement = self.path.with_suffix(".tmp")
+        replacement.write_text(json.dumps(self.record("b", "beta gamma delta")), encoding="utf-8")
+        replacement.replace(self.path)
+        self.assertEqual([m["id"] for m in self.store.search("beta")["matches"]], ["b"])
+        self.assertEqual(self.store.status()["search_mode"], "bm25")
+
+    def test_unknown_mode_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "search mode"):
+            RecordStore(self.path, "semantic")
+
 if __name__ == "__main__":
     unittest.main()

@@ -15,14 +15,15 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
-from .store import RecordStore
+from .store import SEARCH_MODES, RecordStore
 
 
-def create_server(data_path: Path, port: int = 8765, origins: list[str] | None = None) -> FastMCP:
+def create_server(data_path: Path, port: int = 8765, origins: list[str] | None = None,
+                  search_mode: str = "keyword") -> FastMCP:
     """Build the tool registry without opening a port or starting a server loop."""
     # All tools share one adapter pointed at one ingestion export. Constructing
     # it does not create data; each tool call reads the current file contents.
-    store = RecordStore(data_path)
+    store = RecordStore(data_path, search_mode)
     # HTTP uses loopback only. Host checks reject unexpected server addresses;
     # Origin checks reject browser requests from websites we have not allowed.
     # Stateless HTTP needs no session history between calls; records live on disk.
@@ -51,7 +52,7 @@ def create_server(data_path: Path, port: int = 8765, origins: list[str] | None =
 
     @server.tool(annotations=read_only)
     def search_documents(query: str, limit: int = 5) -> dict:
-        """Find ingested records by keywords (any word; no semantic matching yet).
+        """Find ingested records by keywords (no semantic matching yet).
 
         Returns IDs, sources, metadata and bounded excerpts. Read supporting context with
         get_document before making claims. No matches does not prove absence.
@@ -109,14 +110,20 @@ def main():
                         default=Path(os.environ.get("RAG_DATA_PATH", "data/documents.jsonl")),
                         help="Normalized JSONL export (default: data/documents.jsonl)")
     parser.add_argument("--transport", choices=("stdio", "http"), default="stdio")
+    parser.add_argument("--search", choices=SEARCH_MODES,
+                        default=os.environ.get("RAG_SEARCH_MODE", "keyword"),
+                        help="Ranking used by search_documents (default: keyword)")
     parser.add_argument("--port", type=local_port, default=8765, help="Local HTTP port (default: 8765)")
     parser.add_argument("--allow-origin", type=browser_origin, action="append", default=[],
                         help="Allow one browser client's origin; repeat for additional origins")
     args = parser.parse_args()
+    if args.search not in SEARCH_MODES:
+        # argparse checks typed choices but not defaults read from the environment.
+        parser.error(f"RAG_SEARCH_MODE must be one of {', '.join(SEARCH_MODES)}")
     if args.allow_origin and args.transport != "http":
         parser.error("--allow-origin requires --transport http")
     # stdout belongs exclusively to the MCP protocol. Send any future logs to stderr.
-    server = create_server(args.data, args.port, args.allow_origin)
+    server = create_server(args.data, args.port, args.allow_origin, args.search)
     if args.transport == "stdio":
         # Here the MCP client owns the process and exchanges messages through
         # stdin/stdout. There is no HTTP listener in this mode.

@@ -1,0 +1,26 @@
+{"id": "s01", "category": "fact", "question": "What nitrate level in forage is dangerous to cattle?", "expect": ["MF3029", "S115"]}
+{"id": "s02", "category": "fact", "question": "What is the most common cause of hay fires?", "expect": ["MF2853"], "pages": [1]}
+{"id": "s03", "category": "fact", "question": "Below what moisture level should large round bales be baled to keep heating down?", "expect": ["MF2853"], "pages": [2]}
+{"id": "s04", "category": "fact", "question": "Which forage crops can cause prussic acid poisoning in cattle?", "expect": ["MF3040", "MF3607"]}
+{"id": "s05", "category": "fact", "question": "What three yield components are used to estimate wheat yield?", "expect": ["MF3044"], "pages": [1]}
+{"id": "s06", "category": "fact", "question": "What are the four methods for harvesting canola?", "expect": ["MF3092"], "pages": [1]}
+{"id": "s07", "category": "fact", "question": "What does Russian wheat aphid feeding damage look like on the leaves?", "expect": ["MF2666"]}
+{"id": "s08", "category": "fact", "question": "What is patch burn grazing?", "expect": ["MF3073"], "pages": [1]}
+{"id": "s09", "category": "fact", "question": "Has wheat blast been detected in the United States?", "expect": ["MF3583"], "pages": [1]}
+{"id": "s10", "category": "fact", "question": "How should a field sprayer be rinsed after applying herbicide?", "expect": ["MF1089"]}
+{"id": "s11", "category": "fact", "question": "What are the symptoms of flag smut in wheat?", "expect": ["MF3235", "MF2994"]}
+{"id": "s12", "category": "fact", "question": "How does prescribed burning in the Flint Hills affect ozone levels?", "expect": ["MF3357"]}
+{"id": "s13", "category": "fact", "question": "How many soybean seeds per acre should I plant?", "expect": ["MF3460", "C449"]}
+{"id": "s14", "category": "paraphrase", "question": "My hay bales are warm inside. Should I be worried?", "expect": ["MF2853"]}
+{"id": "s15", "category": "paraphrase", "question": "How do I know when there are enough aphids on my soybeans to spray?", "expect": ["MF2582"], "pages": [3]}
+{"id": "s16", "category": "paraphrase", "question": "Is there a phone app for deciding when to pull cattle off wheat pasture?", "expect": ["MF3304"]}
+{"id": "s17", "category": "paraphrase", "question": "How is the heat a crop accumulates each day counted toward its development?", "expect": ["MF3740"]}
+{"id": "s18", "category": "paraphrase", "question": "How long does a hard frost have to last to hurt wheat in the spring?", "expect": ["C646"]}
+{"id": "s19", "category": "paraphrase", "question": "Which insects in alfalfa hay can poison horses?", "expect": ["MF959", "C683"]}
+{"id": "s20", "category": "exact-id", "question": "What is MF3612 about?", "expect": ["MF3612"]}
+{"id": "s21", "category": "exact-id", "question": "Summarize S84.", "expect": ["S84"]}
+{"id": "s22", "category": "exact-id", "question": "What does publication L814 cover?", "expect": ["L814"]}
+{"id": "s23", "category": "not-in-data", "question": "What is today's price for Kansas wheat futures?", "expect": []}
+{"id": "s24", "category": "not-in-data", "question": "How do I grow rice in Kansas?", "expect": []}
+{"id": "s25", "category": "not-in-data", "question": "Which hop varieties grow well in Kansas?", "expect": []}
+{"id": "s26", "category": "not-in-data", "question": "Can I grow pistachios in Kansas?", "expect": []}

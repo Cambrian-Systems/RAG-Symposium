@@ -2,7 +2,8 @@
 
 Unlike the unit tests, this checks discovery, schema handling and tool results
 over the protocol. It uses no language model, chatbot account or bundled data.
-Run directly with `uv run python tests/mcp_smoke.py`.
+Run directly with `uv run python tests/mcp_smoke.py`; extra arguments go to the
+server, so `uv run python tests/mcp_smoke.py --search bm25` checks the other mode.
 """
 import asyncio
 import json
@@ -21,7 +22,7 @@ async def main():
         # Use this test's interpreter so the subprocess has the same installed
         # dependencies. The async context managers close the session/process.
         params = StdioServerParameters(command=sys.executable,
-            args=["-m", "rag_symposium.server", "--data", str(path)])
+            args=["-m", "rag_symposium.server", "--data", str(path), *sys.argv[1:]])
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
                 # The handshake comes before discovery or calls. A real chatbot
