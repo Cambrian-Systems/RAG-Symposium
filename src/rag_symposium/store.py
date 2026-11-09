@@ -24,8 +24,9 @@ import numpy as np
 SEARCH_MODES = ("keyword", "bm25", "hybrid")
 
 # Words too common to say anything about a record, plus instructions such as
-# "summarize". BM25 already gives them little weight; this list only keeps
-# them out of matched/missing term reports.
+# "summarize". BM25 leaves them out of scoring: in a corpus of bulletins,
+# "my" and "I" are rare, so without this list the one publication of farmer
+# interviews outranks pages that actually mention the query's subject.
 STOPWORDS = frozenset("""
 a about after all also am an and any are as at be been before being between both
 but by can could did do does doing during each for from had has have how i if in
@@ -252,8 +253,8 @@ class RecordStore:
             id_match = bool(terms & entry["ids"])
             if not id_match and not present & content:
                 continue
-            score = (self.bm25(entry["text"], stems, index["text"], total)
-                     + TITLE_WEIGHT * self.bm25(entry["title"], stems, index["title"], total))
+            score = (self.bm25(entry["text"], content, index["text"], total)
+                     + TITLE_WEIGHT * self.bm25(entry["title"], content, index["title"], total))
             ranked.append((id_match, score, entry, present))
         ranked.sort(key=lambda item: (-item[0], -item[1], item[2]["record"]["id"]))
         return ranked, typed, content

@@ -135,6 +135,13 @@ class Bm25Tests(unittest.TestCase):
         self.assertEqual(self.store.search(query)["matches"][0]["id"], "target")
         self.assertNotEqual(RecordStore(self.path).search(query)["matches"][0]["id"], "target")
 
+    def test_pronouns_do_not_decide_the_ranking(self):
+        """Rare-but-meaningless words like "my" must not outweigh the subject."""
+        self.publish([*(self.record(f"f{i}", "downy brome is a weed in wheat") for i in range(3)),
+                       self.record("chat", "my farm, I plant my wheat early")])
+        top = self.store.search("how do I get rid of downy brome in my wheat")["matches"][0]
+        self.assertTrue(top["id"].startswith("f"))
+
     def test_publication_id_ranks_its_own_pages_first(self):
         """Pages that cite an ID should not outrank the publication itself."""
         self.publish([self.record("EP1-p1", "see MF9 and MF9 again for MF9 details", document_id="EP1"),
