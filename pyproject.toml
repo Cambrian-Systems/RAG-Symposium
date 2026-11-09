@@ -16,6 +16,8 @@ rag-symposium = "rag_symposium.server:main"
 rag-ingest = "rag_symposium.ingest:main"
 # Makes `uv run rag-eval` score search modes against evals/starter.jsonl.
 rag-eval = "rag_symposium.evaluate:main"
+# Makes `uv run rag-search "question"` print one query's results in each mode.
+rag-search = "rag_symposium.search:main"
 
 [build-system]
 # Hatchling packages the source so command-line entry points/imports work.

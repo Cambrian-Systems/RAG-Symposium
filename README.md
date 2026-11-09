@@ -54,6 +54,7 @@ Before ingestion, `data_status` should report zero records.
 | [src/rag_symposium/store.py](src/rag_symposium/store.py) | Reading/validating records, keyword search, citations and paginated reads |
 | [src/rag_symposium/ingest.py](src/rag_symposium/ingest.py) | Reading corpus documents, chunking them into records, and publishing the export |
 | [src/rag_symposium/embeddings.py](src/rag_symposium/embeddings.py) | Loading the small embedding model hybrid search uses |
+| [src/rag_symposium/search.py](src/rag_symposium/search.py) | `rag-search`: one query's results in each mode, from the command line |
 | [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | Scoring search modes against questions with known answers |
 | [evals/starter.jsonl](evals/starter.jsonl) | 26 starter questions with the publications that answer them |
 | [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
@@ -287,6 +288,13 @@ returned result contains) and `unknown_terms` (words in no record at all), and
 its notice says so. That warning only catches missing *words*. A question about
 2026 yields still matches the 2026 variety guide, so search can't tell you the
 answer isn't there; the agent has to read the text and say so.
+
+To see exactly what the agent would receive for one question, without an agent:
+
+```sh
+uv run rag-search "How do I get rid of downy brome in my wheat field?"
+uv run rag-search "MF991" --mode keyword --mode bm25
+```
 
 ## Measure retrieval with rag-eval
 
