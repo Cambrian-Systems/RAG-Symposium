@@ -9,6 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 from rag_symposium.store import RecordStore
 
 
@@ -164,6 +166,25 @@ class Bm25Tests(unittest.TestCase):
         replacement.replace(self.path)
         self.assertEqual([m["id"] for m in self.store.search("beta")["matches"]], ["b"])
         self.assertEqual(self.store.status()["search_mode"], "bm25")
+
+    def test_hybrid_finds_different_words_for_the_same_thing(self):
+        """A fake embedder that knows two synonyms stands in for the real model."""
+        class Synonyms:
+            def encode(self, texts):
+                rows = [[float("cheat" in t or "cheatgrass" in t), float("hay" in t), 1.0] for t in texts]
+                vectors = np.array(rows, dtype=np.float32)
+                return vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+        self.publish([self.record("brome", "cheat is a weedy brome in winter wheat"),
+                      self.record("bales", "store hay bales dry"),
+                      self.record("MF9-p1", "unrelated text", document_id="MF9")])
+        bm25 = self.store.search("cheatgrass")["matches"]
+        self.assertEqual(bm25, [])
+        hybrid = RecordStore(self.path, "hybrid", embedder=Synonyms())
+        match = hybrid.search("cheatgrass")["matches"][0]
+        self.assertEqual(match["id"], "brome")
+        self.assertEqual(match["ranks"], {"bm25": None, "semantic": 1})
+        self.assertEqual(hybrid.search("MF9 hay")["matches"][0]["id"], "MF9-p1")
+        self.assertEqual(hybrid.status()["search_mode"], "hybrid")
 
     def test_unknown_mode_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "search mode"):

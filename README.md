@@ -5,9 +5,9 @@ text ingested on an attendee's computer.
 
 **Current scope:** the MCP connection, a generic record adapter, the workshop
 corpus in [corpus/](corpus/README.md), and ingestion that chunks it into the
-server's export, two search modes (a naive keyword baseline and BM25), and
-`rag-eval` for scoring them. No chatbot, model provider or embedding model has
-been selected. Semantic retrieval comes later.
+server's export, three search modes (a naive keyword baseline, BM25, and hybrid
+BM25 + embeddings), and `rag-eval` for scoring them. No chatbot or model provider
+has been selected; any MCP-capable client can connect.
 
 ## Start here
 
@@ -53,6 +53,7 @@ Before ingestion, `data_status` should report zero records.
 | [src/rag_symposium/server.py](src/rag_symposium/server.py) | Tool registration, descriptions, command-line options, and the two connection modes |
 | [src/rag_symposium/store.py](src/rag_symposium/store.py) | Reading/validating records, keyword search, citations and paginated reads |
 | [src/rag_symposium/ingest.py](src/rag_symposium/ingest.py) | Reading corpus documents, chunking them into records, and publishing the export |
+| [src/rag_symposium/embeddings.py](src/rag_symposium/embeddings.py) | Loading the small embedding model hybrid search uses |
 | [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | Scoring search modes against questions with known answers |
 | [evals/starter.jsonl](evals/starter.jsonl) | 26 starter questions with the publications that answer them |
 | [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
@@ -194,7 +195,8 @@ Start at offset 0 to read from the beginning. Follow `next_offset` until it is
 | Launch option | Default / effect |
 | --- | --- |
 | `--transport stdio` or `--transport http` | Default `stdio`; the helper selects `http` |
-| `--search keyword` or `--search bm25` | Default `keyword`, or `RAG_SEARCH_MODE`; see [Search modes](#search-modes) |
+| `--search keyword`, `bm25` or `hybrid` | Default `keyword`, or `RAG_SEARCH_MODE`; see [Search modes](#search-modes) |
+| `--embed-model NAME_OR_FOLDER` | Hybrid only. Default `minishlab/potion-base-8M`, or `RAG_EMBED_MODEL` |
 | `--data PATH` | Overrides `RAG_DATA_PATH`, otherwise uses `data/documents.jsonl` relative to the server's working directory |
 | `--port NUMBER` | HTTP port, default 8765 |
 | `--allow-origin ORIGIN` | HTTP-only, repeatable; allows a specific browser origin |
@@ -268,8 +270,18 @@ the server starts (`--search bm25`), then reconnect the client.
 | --- | --- | --- |
 | `keyword` (default) | Counts distinct query words in the title and text. Every word counts the same, and ID breaks ties | Common words (*the, for, in*) count as much as *cheatgrass*; a page that cites `MF991` ties with `MF991` itself |
 | `bm25` | Rare words count more than common ones, long records don't win by size, title matches get a boost, and records whose publication ID is in the query come first. Simple plurals match (*fungicides* finds *fungicide*) | Different words for the same thing (*cheat* vs *downy brome*), tables, and anything that needs meaning rather than matching words |
+| `hybrid` | BM25 and embedding similarity each rank the records; reciprocal rank fusion combines the two lists. Publication IDs still come first | Tables, old documents that match well, and anything the embedding model wasn't trained to understand |
 
-`bm25` results also carry a `score`, an `id_match` flag and each result's
+Hybrid mode embeds every record with
+[potion-base-8M](https://huggingface.co/minishlab/potion-base-8M) (MIT license),
+a ~30 MB static embedding model that runs on a laptop CPU: the whole corpus
+embeds in about a second when the server first searches, and again whenever the
+export changes. The first run downloads the model from Hugging Face. To work
+offline, point `--embed-model` at a downloaded copy of the model folder. Each
+hybrid result's `ranks` shows where BM25 and the embeddings placed it, so you can
+see which method found it.
+
+`bm25` and `hybrid` results also carry a `score`, an `id_match` flag and each result's
 `missing_terms`. The response lists `missing_terms` (meaningful query words no
 returned result contains) and `unknown_terms` (words in no record at all), and
 its notice says so. That warning only catches missing *words*. A question about
@@ -292,7 +304,8 @@ against the current export and prints a table. No model is involved:
 | hit@1 | Share of questions where the first result came from a right publication |
 | hit@5 | Share where a right one was anywhere in the top 5 (change with `-k`) |
 | MRR | Average of 1/rank: 1 for first place, 0.5 for second, 0 for a miss |
-| not-found warnings | For questions with no answer in the data, how many got a `missing_terms` warning |
+| warned: no answer | For questions with no answer in the data, how many got a `missing_terms` warning |
+| warned: has answer | False alarms: questions the data does answer that got a warning anyway |
 
 Each question line names the publications that answer it:
 
@@ -317,6 +330,7 @@ can break another.
 uv run python -m unittest discover -s tests -v
 uv run python tests/mcp_smoke.py
 uv run python tests/mcp_smoke.py --search bm25
+uv run python tests/mcp_smoke.py --search hybrid
 uv run python tests/http_smoke.py
 ```
 

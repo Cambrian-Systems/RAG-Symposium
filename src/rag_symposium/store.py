@@ -10,6 +10,8 @@ Two search modes share the same records and citations:
 - bm25: weighs rare words above common ones, boosts titles, and puts records
   whose publication ID is in the query first. It also reports query words no
   result contains, so a client can notice when the evidence isn't there.
+- hybrid: bm25 plus embedding similarity (see embeddings.py), so a question
+  can find a record that uses different words for the same thing.
 """
 import json
 import math
@@ -17,21 +19,28 @@ import re
 from collections import Counter
 from pathlib import Path
 
-SEARCH_MODES = ("keyword", "bm25")
+import numpy as np
 
-# Words too common to say anything about a record. BM25 already gives them
-# little weight; this list only keeps them out of matched/missing term reports.
+SEARCH_MODES = ("keyword", "bm25", "hybrid")
+
+# Words too common to say anything about a record, plus instructions such as
+# "summarize". BM25 already gives them little weight; this list only keeps
+# them out of matched/missing term reports.
 STOPWORDS = frozenset("""
 a about after all also am an and any are as at be been before being between both
 but by can could did do does doing during each for from had has have how i if in
 into is it its me more most my no not of on or other our should so some such than
 that the their them then there these they this those to too under up very was we
 were what when where which while who whom why will with would you your
+describe explain list summarize tell
 """.split())
 
 # Standard BM25 constants: K1 limits how much repeating a word helps, B scales
 # for record length. TITLE_WEIGHT is how much a title match counts next to text.
 K1, B, TITLE_WEIGHT = 1.2, 0.75, 0.5
+# Hybrid search fuses each method's top CANDIDATES. RRF_K = 60 is the usual
+# constant; it keeps one method's first place from swamping the other's list.
+CANDIDATES, RRF_K = 50, 60
 
 
 def tokens(text: str) -> list[str]:
@@ -59,12 +68,19 @@ def stem(word: str) -> str:
 class RecordStore:
     """One configured file, shared by the MCP status/search/read tools."""
 
-    def __init__(self, path: Path, mode: str = "keyword"):
-        """Expand ~ and anchor the path now, independent of later directory changes."""
+    def __init__(self, path: Path, mode: str = "keyword", embedder=None):
+        """Expand ~ and anchor the path now, independent of later directory changes.
+
+        embedder is used only in hybrid mode; it defaults to embeddings.Embedder.
+        """
         if mode not in SEARCH_MODES:
             raise ValueError(f"search mode must be one of {', '.join(SEARCH_MODES)}")
         self.path = path.expanduser().resolve()
         self.mode = mode
+        if embedder is None and mode == "hybrid":
+            from .embeddings import Embedder
+            embedder = Embedder()
+        self.embedder = embedder
         self._index, self._index_key = None, None
 
     def records(self) -> list[dict]:
@@ -134,6 +150,8 @@ class RecordStore:
             raise ValueError("query must contain a word or number")
         if self.mode == "bm25":
             return self.search_bm25(terms, limit)
+        if self.mode == "hybrid":
+            return self.search_hybrid(query, terms, limit)
         return self.search_keyword(terms, limit)
 
     def match(self, record: dict, matched: set[str], **extra) -> dict:
@@ -212,11 +230,11 @@ class RecordStore:
             score += idf * tf * (K1 + 1) / (tf + K1 * norm)
         return score
 
-    def search_bm25(self, terms: set[str], limit: int) -> dict:
-        """Rank by BM25 over text and title, with exact publication IDs first.
+    def rank_bm25(self, terms: set[str]) -> tuple[list, dict, set]:
+        """Score every record containing a meaningful query word.
 
-        Results also say which meaningful query words they lack. A word that no
-        result contains is a sign the answer may not be in the data at all.
+        Returns (ranked entries, stem -> word as typed, meaningful stems).
+        Each ranked entry is (id_match, score, index entry, stems present).
         """
         index = self.index()
         entries, total = index["entries"], len(index["entries"])
@@ -224,40 +242,104 @@ class RecordStore:
         typed = {}
         for term in sorted(terms):
             typed.setdefault(stem(term), term)
-        ids, terms = terms, set(typed)
-        content = {t for t in terms if typed[t] not in STOPWORDS} or terms
+        stems = set(typed)
+        content = {t for t in stems if typed[t] not in STOPWORDS} or stems
         ranked = []
         for entry in entries:
-            present = {t for t in terms if t in entry["text"] or t in entry["title"]}
+            present = self.present(entry, stems)
             # Someone who types a publication ID means that publication, not
             # every page that cites it. ID matches sort ahead of everything else.
-            id_match = bool(ids & entry["ids"])
+            id_match = bool(terms & entry["ids"])
             if not id_match and not present & content:
                 continue
-            score = (self.bm25(entry["text"], terms, index["text"], total)
-                     + TITLE_WEIGHT * self.bm25(entry["title"], terms, index["title"], total))
-            ranked.append((id_match, score, entry["record"], present))
-        ranked.sort(key=lambda item: (-item[0], -item[1], item[2]["id"]))
+            score = (self.bm25(entry["text"], stems, index["text"], total)
+                     + TITLE_WEIGHT * self.bm25(entry["title"], stems, index["title"], total))
+            ranked.append((id_match, score, entry, present))
+        ranked.sort(key=lambda item: (-item[0], -item[1], item[2]["record"]["id"]))
+        return ranked, typed, content
+
+    @staticmethod
+    def present(entry: dict, stems: set[str]) -> set[str]:
+        return {t for t in stems if t in entry["text"] or t in entry["title"]}
+
+    def results(self, picked: list[tuple[dict, dict]], typed: dict, content: set, mode: str,
+                notice: str) -> dict:
+        """Shape ranked (index entry, extra fields) pairs into a search response,
+        with the words each result and the whole response lack."""
         matches, covered = [], set()
-        for id_match, score, record, present in ranked[:limit]:
+        for entry, extra in picked:
+            present = self.present(entry, set(typed))
             covered |= present
+            record = entry["record"]
             # The excerpt finder looks for whole words, so give it the forms
             # this record actually contains, plural or not.
             words = {w for w in set(tokens(record["title"] + " " + record["text"]))
                      if stem(w) in (present & content or present)}
-            matches.append(self.match(record, words, score=round(score, 3), id_match=id_match,
+            matches.append(self.match(record, words, **extra,
                                       missing_terms=sorted(typed[t] for t in content - present)))
+        index = self.index()
         missing = sorted(typed[t] for t in content - covered)
         unknown = sorted(typed[t] for t in content
                          if not index["text"]["df"][t] and not index["title"]["df"][t])
-        notice = ("BM25: rare words count more than common ones; titles are boosted; "
-                  "exact publication IDs rank first. Scores compare results for this query only. "
-                  "Read records before citing claims.")
         if missing:
             notice += (f" No result contains: {', '.join(missing)}. The answer may not be "
                        "in the data; say so unless the text you read supports it.")
-        return {"matches": matches, "search_mode": "bm25", "missing_terms": missing,
+        return {"matches": matches, "search_mode": mode, "missing_terms": missing,
                 "unknown_terms": unknown, "notice": notice}
+
+    def search_bm25(self, terms: set[str], limit: int) -> dict:
+        """Rank by BM25 over text and title, with exact publication IDs first.
+
+        Results also say which meaningful query words they lack. A word that no
+        result contains is a sign the answer may not be in the data at all.
+        """
+        ranked, typed, content = self.rank_bm25(terms)
+        picked = [(entry, {"score": round(score, 3), "id_match": id_match})
+                  for id_match, score, entry, _ in ranked[:limit]]
+        return self.results(picked, typed, content, "bm25", (
+            "BM25: rare words count more than common ones; titles are boosted; "
+            "exact publication IDs rank first. Scores compare results for this query only. "
+            "Read records before citing claims."))
+
+    def vectors(self, index: dict):
+        """Embed every record once per export version and keep the vectors with the index."""
+        if "vectors" not in index:
+            texts = [e["record"]["title"] + "\n" + e["record"]["text"] for e in index["entries"]]
+            index["vectors"] = self.embedder.encode(texts) if texts else None
+        return index["vectors"]
+
+    def search_hybrid(self, query: str, terms: set[str], limit: int) -> dict:
+        """Combine BM25 with embedding similarity using reciprocal rank fusion.
+
+        Each method ranks the records on its own. A record's fused score is the
+        sum of 1 / (60 + rank) over the methods that ranked it in their top
+        CANDIDATES, so something both methods like rises, and something only
+        one finds can still make the list. Exact publication IDs stay first.
+        """
+        ranked, typed, content = self.rank_bm25(terms)
+        index = self.index()
+        vectors = self.vectors(index)
+        entries = {e["record"]["id"]: e for e in index["entries"]}
+        bm25_rank = {item[2]["record"]["id"]: r for r, item in enumerate(ranked[:CANDIDATES], 1)}
+        semantic_rank = {}
+        if vectors is not None:
+            # Rows are unit length, so this dot product is cosine similarity.
+            similarity = vectors @ self.embedder.encode([query])[0]
+            for r, position in enumerate(np.argsort(-similarity)[:CANDIDATES], 1):
+                semantic_rank[index["entries"][position]["record"]["id"]] = r
+        id_matches = {item[2]["record"]["id"] for item in ranked if item[0]}
+        fused = {}
+        for ranks in (bm25_rank, semantic_rank):
+            for key, r in ranks.items():
+                fused[key] = fused.get(key, 0.0) + 1 / (RRF_K + r)
+        order = sorted(fused, key=lambda key: (key not in id_matches, -fused[key], key))
+        picked = [(entries[key], {"score": round(fused[key], 5), "id_match": key in id_matches,
+                                 "ranks": {"bm25": bm25_rank.get(key), "semantic": semantic_rank.get(key)}})
+                  for key in order[:limit]]
+        return self.results(picked, typed, content, "hybrid", (
+            "Hybrid: BM25 keyword ranking fused with embedding similarity. Each result's "
+            "ranks show which method found it. Exact publication IDs rank first. "
+            "Read records before citing claims."))
 
     @staticmethod
     def excerpt_start(text: str, matched: set[str]) -> int:

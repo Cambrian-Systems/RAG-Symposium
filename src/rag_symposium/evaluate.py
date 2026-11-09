@@ -10,6 +10,7 @@ search the server uses and reports how often the right record came back:
 
 Questions with an empty `expect` list have no answer in the data. For those,
 the score is whether search warned that its results don't cover the question.
+Warnings on questions the data does answer are counted too, as false alarms.
 This measures retrieval only: whether the evidence reached the agent, not
 whether the agent's answer was right.
 """
@@ -20,6 +21,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from .embeddings import DEFAULT_MODEL, Embedder
 from .store import SEARCH_MODES, RecordStore
 
 
@@ -94,12 +96,15 @@ def evaluate(store: RecordStore, questions: list[dict], k: int = 5) -> dict:
         row = {"id": question["id"], "question": question["question"],
                "category": question.get("category", "general"), "expect": question["expect"],
                "top": [m["id"] for m in matches]}
+        warned = not matches or bool(result.get("missing_terms"))
         if question["expect"]:
             row["rank"] = rank_of(matches, question)
+            # A warning on a question the data does answer is a false alarm.
+            row["false_warning"] = warned
         else:
             # Without an answer to find, the useful behavior is a warning.
-            row["flagged"] = not matches or bool(result.get("missing_terms"))
-            row["missing_terms"] = result.get("missing_terms", [])
+            row["flagged"] = warned
+        row["missing_terms"] = result.get("missing_terms", [])
         rows.append(row)
     return {"mode": store.mode, "k": k, "summary": summarize(rows), "questions": rows}
 
@@ -116,7 +121,8 @@ def summarize(rows: list[dict]) -> dict:
                 "hit@k": sum(r is not None for r in ranks) / n if n else None,
                 "mrr": sum(1 / r for r in ranks if r) / n if n else None,
                 "unanswerable": len(unanswerable),
-                "flagged": sum(r["flagged"] for r in unanswerable)}
+                "flagged": sum(r["flagged"] for r in unanswerable),
+                "false_warnings": sum(r["false_warning"] for r in answerable)}
     categories = defaultdict(list)
     for row in rows:
         categories[row["category"]].append(row)
@@ -130,12 +136,12 @@ def percent(value) -> str:
 def report(results: list[dict], show: str) -> str:
     """Plain-text tables: one line per mode, then per category, then misses."""
     k = results[0]["k"]
-    lines = [f"{'mode':<10} {'hit@1':>6} {f'hit@{k}':>6} {'MRR':>5}   not-found warnings"]
+    lines = [f"{'mode':<10} {'hit@1':>6} {f'hit@{k}':>6} {'MRR':>5}   warned: no answer / has answer"]
     for result in results:
         s = result["summary"]["all"]
         mrr = "  -  " if s["mrr"] is None else f"{s['mrr']:.2f}"
         lines.append(f"{result['mode']:<10} {percent(s['hit@1']):>6} {percent(s['hit@k']):>6} "
-                     f"{mrr:>5}   {s['flagged']}/{s['unanswerable']}")
+                     f"{mrr:>5}   {s['flagged']}/{s['unanswerable']:<9} {s['false_warnings']}/{s['answerable']}")
     lines.append(f"\n({results[0]['summary']['all']['answerable']} answerable questions, "
                  f"{results[0]['summary']['all']['unanswerable']} with no answer in the data)")
     lines.append(f"\nhit@{k} by category")
@@ -175,6 +181,8 @@ def main():
                         help="Ingestion export to search (default: data/documents.jsonl)")
     parser.add_argument("--mode", choices=SEARCH_MODES, action="append",
                         help="Search mode to score; repeat to compare (default: all)")
+    parser.add_argument("--embed-model", default=os.environ.get("RAG_EMBED_MODEL", DEFAULT_MODEL),
+                        help="Hybrid mode's embedding model: a Hugging Face name or a local folder")
     parser.add_argument("-k", type=int, default=5, help="How many results count (1-10, default 5)")
     parser.add_argument("--show", choices=("none", "misses", "all"), default="misses",
                         help="Which questions to list under the scores (default: misses)")
@@ -183,7 +191,8 @@ def main():
     if not 1 <= args.k <= 10:
         parser.error("-k must be between 1 and 10")
     questions = load_questions(args.questions)
-    stores = [RecordStore(args.data, mode) for mode in (args.mode or SEARCH_MODES)]
+    stores = [RecordStore(args.data, mode, Embedder(args.embed_model) if mode == "hybrid" else None)
+              for mode in (args.mode or SEARCH_MODES)]
     if not stores[0].status()["record_count"]:
         parser.error(f"{args.data} has no records. Run `uv run rag-ingest` first.")
     results = [evaluate(store, questions, args.k) for store in stores]

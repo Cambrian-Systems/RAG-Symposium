@@ -48,6 +48,7 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(summary["hit@1"], 0.5)
         self.assertEqual(summary["hit@k"], 0.5)
         self.assertEqual((summary["unanswerable"], summary["flagged"]), (1, 1))
+        self.assertEqual(summary["false_warnings"], 1)  # q1: "causes" is in no result
         self.assertEqual(result["summary"]["categories"]["fact"]["hit@1"], 1.0)
         keyword = evaluate(RecordStore(data, "keyword"), questions, k=5)
         self.assertEqual(keyword["summary"]["all"]["flagged"], 0)
