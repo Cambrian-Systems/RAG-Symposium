@@ -7,6 +7,7 @@
         "--directory", "/absolute/path/to/RAG-Symposium",
         "--locked",
         "rag-symposium",
+        "--search", "bm25",
         "--data", "/absolute/path/to/RAG-Symposium/data/documents.jsonl"
       ]
     }

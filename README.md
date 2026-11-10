@@ -242,6 +242,7 @@ client's configuration, replacing every placeholder path:
 | `--directory` and the following path | Locate this repo regardless of the client's working directory |
 | `--locked` | Use the dependency lockfile; fail rather than silently resolve changed requirements |
 | `rag-symposium` in `args` | Run the entry point defined in `pyproject.toml` |
+| `--search` and `bm25` | Pick the search mode; change it to `hybrid` or `keyword` to compare |
 | `--data` and the following path | Select the ingestion export; use an absolute path |
 
 `args` is an array: each option/path is a separate element, including paths with

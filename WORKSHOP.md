@@ -177,6 +177,36 @@ any document you care about in place of `NIST-AI-600-1`.
 Fallback: copy the format of a line in `evals/starter.jsonl` in a text editor,
 then run `uv run rag-eval`.
 
+## Using your own agent instead of OpenCode
+
+You don't have to use OpenCode. Any agent that runs on your laptop and speaks
+MCP can use the same search tools: Codex, Claude Code, Cursor, VS Code with
+Copilot, Gemini CLI and others. A chatbot that only runs in a web page cannot
+reach a server on your laptop.
+
+1. Open this folder in your agent and paste the setup prompt from step 4 above.
+2. Connect the search server. [mcp.example.json](mcp.example.json) has the
+   settings; replace the three placeholder paths with the real ones. Most
+   agents will do that for you if you ask: `Add the MCP server described in
+   mcp.example.json to your MCP settings, using the real paths on this
+   computer.` Then start a new session.
+3. Checkpoint 2 is the same question. The three tools are `data_status`,
+   `search_documents` and `get_document`; your agent may show them with a
+   different prefix than `rag_`.
+
+What differs from the OpenCode steps:
+
+- **Web search.** This folder switches OpenCode's web tools off. Your agent's
+  are probably on. Turn them off for today if you can; if not, check whether
+  each answer came from the documents or from the web.
+- **Round 1.** The search mode is the `--search` value in your agent's MCP
+  settings, not `opencode.jsonc`. Change `bm25` to `hybrid` there.
+- **New session.** After changing the MCP settings or `server.py`, restart the
+  search server in your agent, or start a new session.
+
+We tested every step in OpenCode. With another agent the steps are the same
+but the buttons are yours; compare what your agent does with your neighbour's.
+
 ## Two habits that save time
 
 - **Start a new session** after any change to `opencode.jsonc` or `server.py`.
