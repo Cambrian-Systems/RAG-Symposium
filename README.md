@@ -271,7 +271,7 @@ export on its next tool call.
 | Mode | One record per | Record ID | Records from the workshop corpus |
 | --- | --- | --- | --- |
 | `page` (default) | PDF page, or numbered ~3,000-character section of a web page | `OMB-M-24-10-p3` | 1,847 |
-| `window` | ~1,500-character window, 200 characters shared with the next | `OMB-M-24-10-w7` | 4,195 |
+| `window` | ~1,500-character window, 200 characters shared with the next | `OMB-M-24-10-w7` | 4,214 |
 | `document` | Document | `OMB-M-24-10` | 62 |
 
 ```sh
@@ -419,9 +419,9 @@ With the starter questions and the default page-mode export:
 
 | Mode | document hit@1 | document hit@5 | MRR | page hit@1 | page hit@5 | warned: no answer | warned: has answer |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `keyword` | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) |
-| `bm25` | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) |
-| `hybrid` | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) | (filled in by the lead) |
+| `keyword` | 14% | 50% | 0.28 | 5% | 27% | 0 of 4 | 0 of 22 |
+| `bm25` | 55% | 77% | 0.62 | 32% | 50% | 2 of 4 | 12 of 22 |
+| `hybrid` | 59% | 77% | 0.65 | 41% | 50% | 4 of 4 | 15 of 22 |
 
 Each question line names the documents that answer it. For example:
 
