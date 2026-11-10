@@ -5,8 +5,8 @@ title: "Generative Artificial Intelligence and Copyright Law"
 issuer: "Congressional Research Service"
 published: "2025-07-18"
 revised: ""
-status: "unknown"
-status_note: "Version 10 dated 2025-07-18 (latest per CRS version history)."
+status: "report"
+status_note: "An analysis for Congress, not a rule. It describes the law as of its own date. Version 10, 2025-07-18."
 status_evidence: ""
 replaces: []
 replaced_by: []

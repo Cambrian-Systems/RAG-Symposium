@@ -3,16 +3,16 @@ id: "EEOC-ADA-AI-2022"
 aliases: ["EEOC ADA AI guidance", "EEOC algorithms ADA technical assistance", "EEOC 2022 AI guidance"]
 title: "The Americans with Disabilities Act and the Use of Software, Algorithms, and Artificial Intelligence to Assess Job Applicants and Employees"
 issuer: "U.S. Equal Employment Opportunity Commission"
-published: "2022-05-12"
+published: "2022-05"
 revised: ""
 status: "removed from agency site"
-status_note: "Official URL now returns 'Page not found'. Text came from a 2024 web.archive.org copy. Published date is from memory and unverified."
+status_note: "The official page now returns 'Page not found'. Text is from a 2024 Internet Archive copy. The agency has not said whether it still stands behind it."
 status_evidence: "\"Page not found | U.S. Equal Employment Opportunity Commission\" (title returned 2026-11-10) - https://www.eeoc.gov/laws/guidance/americans-disabilities-act-and-use-software-algorithms-and-artificial-intelligence"
 replaces: []
 replaced_by: []
 topics: ["hiring"]
 source_url: "https://www.eeoc.gov/laws/guidance/americans-disabilities-act-and-use-software-algorithms-and-artificial-intelligence"
-credit: "U.S. Equal Employment Opportunity Commission, The Americans with Disabilities Act and the Use of Software, Algorithms, and Artificial Intelligence to Assess Job Applicants and Employees, 2022-05-12."
+credit: "U.S. Equal Employment Opportunity Commission, The Americans with Disabilities Act and the Use of Software, Algorithms, and Artificial Intelligence to Assess Job Applicants and Employees, 2022-05."
 license_note: "U.S. government work; not subject to copyright in the United States (17 U.S.C. 105)."
 ---
 

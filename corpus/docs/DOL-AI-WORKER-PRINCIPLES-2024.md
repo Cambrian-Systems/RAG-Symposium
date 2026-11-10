@@ -6,7 +6,7 @@ issuer: "U.S. Department of Labor"
 published: "2024-10"
 revised: ""
 status: "removed from agency site"
-status_note: "Official PDF URL returns HTTP 404 and the landing page shows 'Page Not Found' in a 2026-01-01 Wayback capture. Text came from the 2024-12-02 Wayback copy. The document says it was issued under 'President Biden's Executive Order'."
+status_note: "The official page and PDF now return 'Page Not Found'. Text is from a December 2024 Internet Archive copy."
 status_evidence: "og:title \"Page Not Found\" for https://www.dol.gov/general/AI-Principles (Wayback capture 20260101114102); live HTTP 404 at https://www.dol.gov/sites/dolgov/files/general/ai/AI-Principles-Best-Practices.pdf"
 replaces: []
 replaced_by: []

@@ -2,17 +2,17 @@
 id: "NIST-AI-100-5"
 aliases: ["NIST AI 100-5", "Plan for Global Engagement on AI Standards"]
 title: "A Plan for Global Engagement on AI Standards"
-issuer: "NIST"
-published: ""
+issuer: "National Institute of Standards and Technology"
+published: "2024-07"
 revised: ""
 status: "unknown"
-status_note: "Final PDF fetched; written under EO 14110 (revoked) but no NIST withdrawal notice found."
+status_note: "Written to carry out Executive Order 14110, which was revoked in January 2025. NIST has not marked the plan withdrawn."
 status_evidence: ""
 replaces: []
 replaced_by: []
 topics: ["standards"]
 source_url: "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-5.pdf"
-credit: "NIST, A Plan for Global Engagement on AI Standards."
+credit: "National Institute of Standards and Technology, A Plan for Global Engagement on AI Standards, 2024-07."
 license_note: "U.S. government work; not subject to copyright in the United States (17 U.S.C. 105)."
 ---
 

@@ -6,7 +6,7 @@ issuer: "White House Office of Science and Technology Policy"
 published: "2022-10"
 revised: ""
 status: "removed from agency site"
-status_note: "Former whitehouse.gov landing page returns 404; no formal rescission document found. Status based on HTTP observation, not primary text."
+status_note: "The former whitehouse.gov page returns 'not found'. We found no formal rescission. Text is from the archived White House site. It was always a non-binding blueprint."
 status_evidence: "HTTP 404 observed 2026-11-10 at https://www.whitehouse.gov/ostp/ai-bill-of-rights/ (observation, not a quoted statement)"
 replaces: []
 replaced_by: []

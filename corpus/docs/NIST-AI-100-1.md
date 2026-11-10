@@ -6,7 +6,7 @@ issuer: "National Institute of Standards and Technology"
 published: "2023-01"
 revised: ""
 status: "current"
-status_note: "Current version 1.0; NIST says it is being revised under the AI Action Plan (no replacement published as of 2026-11-10)."
+status_note: "Version 1.0 is current. NIST says it is being revised under the 2025 AI Action Plan; no replacement had been published by 2026-11-10."
 status_evidence: "NIST AI RMF page: \"The AI RMF 1.0 is being revised as part of the White House AI Action Plan.\" — https://www.nist.gov/itl/ai-risk-management-framework"
 replaces: []
 replaced_by: []

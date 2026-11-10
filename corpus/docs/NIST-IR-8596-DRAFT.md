@@ -2,17 +2,17 @@
 id: "NIST-IR-8596-DRAFT"
 aliases: ["NIST IR 8596", "NISTIR 8596", "Cyber AI Profile"]
 title: "Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile), Preliminary Draft"
-issuer: "NIST"
+issuer: "National Institute of Standards and Technology"
 published: "2025-12-16"
 revised: ""
 status: "draft"
-status_note: "Preliminary draft (comments closed 2026-01-30); final not yet issued."
+status_note: "Preliminary draft; comments closed 2026-01-30. No final version yet."
 status_evidence: "CSRC: \"Draft for Public Comment ... Comments received will inform the initial public draft.\" — https://csrc.nist.gov/pubs/ir/8596/iprd"
 replaces: []
 replaced_by: []
 topics: ["security", "standards"]
 source_url: "https://csrc.nist.gov/pubs/ir/8596/iprd"
-credit: "NIST, Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile), Preliminary Draft, 2025-12-16."
+credit: "National Institute of Standards and Technology, Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile), Preliminary Draft, 2025-12-16."
 license_note: "U.S. government work; not subject to copyright in the United States (17 U.S.C. 105)."
 ---
 

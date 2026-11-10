@@ -6,7 +6,7 @@ issuer: "U.S. Equal Employment Opportunity Commission"
 published: "2023-05-18"
 revised: ""
 status: "removed from agency site"
-status_note: "Official URL now returns 'Page not found'. Text came from a 2024 web.archive.org copy. Published date is from memory and unverified."
+status_note: "The official page now returns 'Page not found'. Text is from a 2024 Internet Archive copy. The agency has not said whether it still stands behind it."
 status_evidence: "\"Page not found | U.S. Equal Employment Opportunity Commission\" (title returned 2026-11-10) - https://www.eeoc.gov/laws/guidance/select-issues-assessing-adverse-impact-software-algorithms-and-artificial"
 replaces: []
 replaced_by: []

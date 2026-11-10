@@ -6,7 +6,7 @@ issuer: "National Institute of Standards and Technology"
 published: "2024-11"
 revised: ""
 status: "unknown"
-status_note: "Downloaded by lead; status not checked by this worker."
+status_note: "Written to carry out Executive Order 14110, which was revoked in January 2025. NIST has not marked the report withdrawn."
 status_evidence: ""
 replaces: []
 replaced_by: []

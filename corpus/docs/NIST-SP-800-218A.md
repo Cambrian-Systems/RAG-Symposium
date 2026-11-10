@@ -2,17 +2,17 @@
 id: "NIST-SP-800-218A"
 aliases: ["SP 800-218A", "NIST SP 800-218A", "SSDF GenAI profile"]
 title: "Secure Software Development Practices for Generative AI and Dual-Use Foundation Models: An SSDF Community Profile"
-issuer: "NIST"
+issuer: "National Institute of Standards and Technology"
 published: "2024-07-26"
 revised: ""
 status: "current"
-status_note: "Final publication listed on CSRC 'final' page; no withdrawal noted."
+status_note: "Listed by NIST as a final publication, with no withdrawal noted."
 status_evidence: "CSRC page title: \"NIST Special Publication (SP) 800-218A, Secure Software Development Practices for Generative AI and Dual-Use Foundation Models: An SSDF Community Profile\" at /pubs/sp/800/218/a/final — https://csrc.nist.gov/pubs/sp/800/218/a/final"
 replaces: []
 replaced_by: []
 topics: ["security", "standards"]
 source_url: "https://csrc.nist.gov/pubs/sp/800/218/a/final"
-credit: "NIST, Secure Software Development Practices for Generative AI and Dual-Use Foundation Models: An SSDF Community Profile, 2024-07-26."
+credit: "National Institute of Standards and Technology, Secure Software Development Practices for Generative AI and Dual-Use Foundation Models: An SSDF Community Profile, 2024-07-26."
 license_note: "U.S. government work; not subject to copyright in the United States (17 U.S.C. 105)."
 ---
 

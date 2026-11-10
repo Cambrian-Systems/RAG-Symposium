@@ -3,16 +3,16 @@ id: "JOINT-STATEMENT-AI-ENFORCEMENT-2023"
 aliases: ["Joint Statement on Enforcement Efforts Against Discrimination and Bias in Automated Systems"]
 title: "Joint Statement on Enforcement Efforts Against Discrimination and Bias in Automated Systems"
 issuer: "EEOC, DOJ Civil Rights Division, FTC, CFPB"
-published: "2023-04-25"
+published: "2023-04"
 revised: ""
 status: "unknown"
-status_note: "Still downloadable from ftc.gov 2026-11-10; whether the agencies still stand behind it is not stated anywhere checked. Text taken from an Internet Archive copy of the official file."
+status_note: "We could not confirm whether the four agencies still stand behind this statement. Text is from an Internet Archive copy of the official file."
 status_evidence: ""
 replaces: []
 replaced_by: []
 topics: ["hiring", "privacy"]
 source_url: "https://www.ftc.gov/system/files/ftc_gov/pdf/EEOC-CRT-FTC-CFPB-AI-Joint-Statement%28final%29.pdf"
-credit: "EEOC, DOJ Civil Rights Division, FTC, CFPB, Joint Statement on Enforcement Efforts Against Discrimination and Bias in Automated Systems, 2023-04-25."
+credit: "EEOC, DOJ Civil Rights Division, FTC, CFPB, Joint Statement on Enforcement Efforts Against Discrimination and Bias in Automated Systems, 2023-04."
 license_note: "U.S. government work; not subject to copyright in the United States (17 U.S.C. 105)."
 ---
 

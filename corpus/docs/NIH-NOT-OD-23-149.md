@@ -6,7 +6,7 @@ issuer: "National Institutes of Health"
 published: "2023-06-23"
 revised: ""
 status: "in force"
-status_note: "Live in the NIH Guide on 2026-11-10 with no superseding notice linked. Clarifies NOT-OD-22-044."
+status_note: "Posted in the NIH Guide on 2026-11-10 with no superseding notice linked."
 status_evidence: "\"the NIH prohibits NIH scientific peer reviewers from using natural language processors, large language models, or other generative Artificial Intelligence (AI) technologies for analyzing and formulating peer review critiques\" - https://grants.nih.gov/grants/guide/notice-files/NOT-OD-23-149.html"
 replaces: []
 replaced_by: []

@@ -2,17 +2,17 @@
 id: "NIST-AI-800-1-DRAFT"
 aliases: ["NIST AI 800-1", "AI 800-1 second public draft", "Managing Misuse Risk for Dual-Use Foundation Models"]
 title: "Managing Misuse Risk for Dual-Use Foundation Models (Second Public Draft)"
-issuer: "NIST (U.S. AI Safety Institute)"
-published: ""
+issuer: "National Institute of Standards and Technology (U.S. AI Safety Institute)"
+published: "2025-01"
 revised: ""
 status: "draft"
-status_note: "Second public draft only; no final found; CSRC draft page returned 404."
+status_note: "Second public draft. We found no final version."
 status_evidence: "PDF cover: \"NIST AI 800-1 2pd ... Second Public Draft ... Managing Misuse Risk for Dual-Use Foundation Models ... U.S. AI Safety Institute\" — https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.800-1.ipd2.pdf"
 replaces: []
 replaced_by: []
 topics: ["security", "standards"]
 source_url: "https://www.nist.gov/publications/managing-misuse-risk-dual-use-foundation-models"
-credit: "NIST (U.S. AI Safety Institute), Managing Misuse Risk for Dual-Use Foundation Models (Second Public Draft)."
+credit: "National Institute of Standards and Technology (U.S. AI Safety Institute), Managing Misuse Risk for Dual-Use Foundation Models (Second Public Draft), 2025-01."
 license_note: "U.S. government work; not subject to copyright in the United States (17 U.S.C. 105)."
 ---
 

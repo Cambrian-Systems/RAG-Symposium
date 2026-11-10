@@ -6,7 +6,7 @@ issuer: "U.S. National Science Foundation"
 published: "2023-12-14"
 revised: ""
 status: "in force"
-status_note: "Live on nsf.gov; page shows 'Last updated: May 21, 2026'. Old URL /news/notice-to-the-research-community-on-ai redirects here."
+status_note: "Posted on nsf.gov; the page shows 'Last updated: May 21, 2026'."
 status_evidence: "\"NSF reviewers are prohibited from uploading any content from proposals, review information and related records to non-approved generative AI tools.\" - https://www.nsf.gov/policies/ai/merit-review"
 replaces: []
 replaced_by: []

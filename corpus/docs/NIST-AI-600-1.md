@@ -6,7 +6,7 @@ issuer: "National Institute of Standards and Technology"
 published: "2024-07"
 revised: ""
 status: "current"
-status_note: "Still linked as current on NIST AI RMF page; no replacement found."
+status_note: "Still listed by NIST alongside the framework, with no replacement found."
 status_evidence: "NIST AI RMF page: \"On July 26, 2024, NIST released NIST-AI-600-1, Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile\" — https://www.nist.gov/itl/ai-risk-management-framework"
 replaces: []
 replaced_by: []

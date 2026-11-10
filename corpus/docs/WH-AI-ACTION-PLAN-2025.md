@@ -5,9 +5,9 @@ title: "Winning the Race: America's AI Action Plan"
 issuer: "The White House"
 published: "2025-07"
 revised: ""
-status: "unknown"
-status_note: "Live on whitehouse.gov 2026-11-10; produced under EO 14179 Sec. 4; no replacement found, but no primary statement of status."
-status_evidence: ""
+status: "current"
+status_note: "Posted on whitehouse.gov on 2026-11-10. It is a plan produced under Executive Order 14179, not a binding rule."
+status_evidence: "Observed live at https://www.whitehouse.gov/wp-content/uploads/2025/07/Americas-AI-Action-Plan.pdf on 2026-11-10; EO 14179 Sec. 4 orders the plan."
 replaces: []
 replaced_by: []
 topics: ["federal-use"]

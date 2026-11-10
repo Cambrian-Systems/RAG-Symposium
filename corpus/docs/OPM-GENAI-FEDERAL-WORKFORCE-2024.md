@@ -6,7 +6,7 @@ issuer: "U.S. Office of Personnel Management"
 published: "2024-04"
 revised: ""
 status: "removed from agency site"
-status_note: "Official URL returns 'Page Not Found' (2026-11-10). Wayback CDX shows HTTP 200 in 2024 and 404 from 2025-04-15. Text came from the 2024-09-27 Wayback copy."
+status_note: "The official page now returns 'Page Not Found'; the Internet Archive shows it live in 2024 and gone by April 2025. Text is from a September 2024 copy."
 status_evidence: "\"<title>Page Not Found</title>\" - https://www.opm.gov/data/resources/ai-guidance/"
 replaces: []
 replaced_by: []

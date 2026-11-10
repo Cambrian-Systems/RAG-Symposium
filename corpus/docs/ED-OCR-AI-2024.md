@@ -6,7 +6,7 @@ issuer: "U.S. Department of Education, Office for Civil Rights"
 published: "2024-11"
 revised: ""
 status: "unknown"
-status_note: "Downloaded from ERIC. ed.gov returned 403, so whether OCR still posts it is unconfirmed. Day of month not verified."
+status_note: "ed.gov refused automated requests on 2026-11-10, so we could not confirm the Department still posts this. Text is from ERIC, the Department's own research archive."
 status_evidence: ""
 replaces: []
 replaced_by: []

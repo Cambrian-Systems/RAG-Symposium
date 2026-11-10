@@ -6,7 +6,7 @@ issuer: "U.S. Department of Education, Office of Educational Technology"
 published: "2024-07"
 revised: ""
 status: "unknown"
-status_note: "Downloaded from ERIC (ED's own repository). Original tech.ed.gov location could not be checked."
+status_note: "ed.gov refused automated requests on 2026-11-10, so we could not confirm the Department still posts this. Text is from ERIC, the Department's own research archive."
 status_evidence: ""
 replaces: []
 replaced_by: []
