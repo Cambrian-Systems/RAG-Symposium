@@ -6,7 +6,7 @@ issuer: "National Institute of Standards and Technology"
 published: "2024-11"
 revised: ""
 status: "unknown"
-status_note: ""
+status_note: "Downloaded by lead; status not checked by this worker."
 status_evidence: ""
 replaces: []
 replaced_by: []

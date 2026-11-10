@@ -1,13 +1,13 @@
 ---
 id: "OSTP-AI-BILL-OF-RIGHTS-2022"
-aliases: ["AI Bill of Rights", "Blueprint for an AI Bill of Rights"]
+aliases: ["Blueprint for an AI Bill of Rights"]
 title: "Blueprint for an AI Bill of Rights: Making Automated Systems Work for the American People"
 issuer: "White House Office of Science and Technology Policy"
 published: "2022-10"
 revised: ""
-status: "unknown"
-status_note: ""
-status_evidence: ""
+status: "removed from agency site"
+status_note: "Former whitehouse.gov landing page returns 404; no formal rescission document found. Status based on HTTP observation, not primary text."
+status_evidence: "HTTP 404 observed 2026-11-10 at https://www.whitehouse.gov/ostp/ai-bill-of-rights/ (observation, not a quoted statement)"
 replaces: []
 replaced_by: []
 topics: ["privacy", "federal-use"]

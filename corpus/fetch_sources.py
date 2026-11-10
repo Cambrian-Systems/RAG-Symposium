@@ -25,6 +25,7 @@ a quoted sentence from an official document as evidence.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import html
 import io
@@ -63,7 +64,9 @@ def get(url: str, tries: int = 3) -> bytes:
         try:
             request = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
             with urllib.request.urlopen(request, timeout=60) as response:
-                return response.read()
+                data = response.read()
+            # Archived copies can arrive still gzip-compressed (magic bytes 1f 8b).
+            return gzip.decompress(data) if data[:2] == b"\x1f\x8b" else data
         except (urllib.error.URLError, TimeoutError) as error:
             last = error
             time.sleep(2 * (attempt + 1))
@@ -134,9 +137,25 @@ def html_pages(data: bytes, selector: str | None = None) -> list[str]:
         # Keep only the part of the page after a marker string, when one is given.
         _, found, rest = page.partition(selector)
         page = rest if found else page
+    else:
+        # Most agency pages wrap the document itself in <main> or <article>.
+        for tag in ("main", "article"):
+            inner = re.search(rf"<{tag}\b.*?</{tag}>", page, flags=re.S | re.I)
+            if inner:
+                page = inner.group(0)
+                break
     parser = _Text()
     parser.feed(page)
-    return [clean(html.unescape("".join(parser.parts)))]
+    lines = [re.sub(r"\s+", " ", line).strip() for line in html.unescape("".join(parser.parts)).splitlines()]
+    # A web page has no page breaks, so cut it into numbered sections of about
+    # 3,000 characters at line ends. They play the role PDF pages play elsewhere.
+    sections, current = [], ""
+    for line in (line for line in lines if line):
+        if current and len(current) + len(line) > 3000:
+            sections.append(current)
+            current = ""
+        current += line + "\n"
+    return [clean(section) for section in sections + [current] if section.strip()]
 
 
 def executive_order_status(source: dict) -> dict:

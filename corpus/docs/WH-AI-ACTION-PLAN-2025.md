@@ -1,12 +1,12 @@
 ---
 id: "WH-AI-ACTION-PLAN-2025"
-aliases: ["AI Action Plan", "America's AI Action Plan"]
+aliases: ["America's AI Action Plan"]
 title: "Winning the Race: America's AI Action Plan"
 issuer: "The White House"
 published: "2025-07"
 revised: ""
 status: "unknown"
-status_note: ""
+status_note: "Live on whitehouse.gov 2026-11-10; produced under EO 14179 Sec. 4; no replacement found, but no primary statement of status."
 status_evidence: ""
 replaces: []
 replaced_by: []

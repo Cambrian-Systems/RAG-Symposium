@@ -5,9 +5,9 @@ title: "Copyright and Artificial Intelligence, Part 1: Digital Replicas"
 issuer: "U.S. Copyright Office"
 published: "2024-07"
 revised: ""
-status: "unknown"
-status_note: ""
-status_evidence: ""
+status: "current"
+status_note: "Listed as published Part 1 on Copyright Office AI page."
+status_evidence: "copyright.gov/ai: \"Part 1 was published on July 31, 2024, and addresses the topic of digital replicas.\" — https://www.copyright.gov/ai/"
 replaces: []
 replaced_by: []
 topics: ["copyright"]

@@ -6,7 +6,7 @@ issuer: "U.S. Copyright Office"
 published: "2023-03-16"
 revised: ""
 status: "unknown"
-status_note: ""
+status_note: "Downloaded by lead; still cited by CRS LSB10922 (July 2025) but no primary status statement checked."
 status_evidence: ""
 replaces: []
 replaced_by: []

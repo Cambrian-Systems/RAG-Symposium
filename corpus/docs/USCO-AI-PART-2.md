@@ -5,9 +5,9 @@ title: "Copyright and Artificial Intelligence, Part 2: Copyrightability"
 issuer: "U.S. Copyright Office"
 published: "2025-01"
 revised: ""
-status: "unknown"
-status_note: ""
-status_evidence: ""
+status: "current"
+status_note: "Listed as published Part 2 on Copyright Office AI page."
+status_evidence: "copyright.gov/ai: \"Part 2 was published on January 29, 2025, and addresses the copyrightability of outputs created using generative AI.\" — https://www.copyright.gov/ai/"
 replaces: []
 replaced_by: []
 topics: ["copyright"]

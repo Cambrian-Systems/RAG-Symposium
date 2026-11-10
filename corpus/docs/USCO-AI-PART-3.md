@@ -5,9 +5,9 @@ title: "Copyright and Artificial Intelligence, Part 3: Generative AI Training (p
 issuer: "U.S. Copyright Office"
 published: "2025-05"
 revised: ""
-status: "unknown"
-status_note: ""
-status_evidence: ""
+status: "draft"
+status_note: "Still only a pre-publication version as of 2026-11-10; final promised, no substantive changes expected."
+status_evidence: "copyright.gov/ai: \"On May 9, 2025, the Office released a pre-publication version of Part 3 ... A final version of Part 3 will be published in the future, without any substantive changes expected in the analysis or conclusions.\" — https://www.copyright.gov/ai/"
 replaces: []
 replaced_by: []
 topics: ["copyright"]
