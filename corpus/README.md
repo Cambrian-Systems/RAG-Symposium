@@ -85,16 +85,18 @@ Status is never guessed.
   document, quoted in `status_evidence` with its URL. For example, OMB M-25-21
   says "This memorandum rescinds and replaces ... M-24-10", so M-24-10 is
   `rescinded` and `replaced_by` lists `OMB-M-25-21`.
-- **`unknown`:** no official sentence establishing the status was found. Reports
-  (CRS, GAO) and many guides are `unknown` because nobody formally withdraws
-  them, not because they are suspect.
+- **`unknown`:** no official sentence establishing the status was found.
+  `status_note` says what we could and could not confirm.
 
 | Status | Meaning |
 | --- | --- |
 | `in force` | An order, memo, rule, notice or statute that had not been revoked or rescinded |
 | `current` | Guidance or a standard the issuer still presents as its latest version |
-| `draft` | A proposal, public draft or pre-publication version; not final |
+| `report` | An analysis (Congressional Research Service, Government Accountability Office); not a rule, and it describes the law as of its own date |
+| `draft` | A proposal or public draft; not final |
+| `pre-publication` | Released by the issuer ahead of a final version |
 | `superseded` | A proposal replaced by a later final version |
+| `earlier edition` | A later edition of the same report is also in the corpus |
 | `revoked` | An executive order revoked by a later order |
 | `rescinded` | A memo or guidance withdrawn by a later document |
 | `removed from agency site` | The official URL now returns "Page not found"; see below |
@@ -167,11 +169,11 @@ for i, r in enumerate(rows):
 
 | Issuer | ID | Title | Date | Status |
 | --- | --- | --- | --- | --- |
-| Congressional Research Service | `CRS-R47644` | Artificial Intelligence: Overview, Recent Advances, and Considerations for the 118th Congress | 2023-08-04 | unknown |
-|  | `CRS-IF12426` | Generative Artificial Intelligence: Overview, Issues, and Considerations for Congress | 2025-04-02 | unknown |
-|  | `CRS-R48555` | Regulating Artificial Intelligence: U.S. and International Approaches and Considerations for Congress | 2025-06-04 | unknown |
-|  | `CRS-LSB10922` | Generative Artificial Intelligence and Copyright Law | 2025-07-18 | unknown |
-| EEOC, DOJ Civil Rights Division, FTC, CFPB | `JOINT-STATEMENT-AI-ENFORCEMENT-2023` | Joint Statement on Enforcement Efforts Against Discrimination and Bias in Automated Systems | 2023-04-25 | unknown |
+| Congressional Research Service | `CRS-R47644` | Artificial Intelligence: Overview, Recent Advances, and Considerations for the 118th Congress | 2023-08-04 | report |
+|  | `CRS-IF12426` | Generative Artificial Intelligence: Overview, Issues, and Considerations for Congress | 2025-04-02 | report |
+|  | `CRS-R48555` | Regulating Artificial Intelligence: U.S. and International Approaches and Considerations for Congress | 2025-06-04 | report |
+|  | `CRS-LSB10922` | Generative Artificial Intelligence and Copyright Law | 2025-07-18 | report |
+| EEOC, DOJ Civil Rights Division, FTC, CFPB | `JOINT-STATEMENT-AI-ENFORCEMENT-2023` | Joint Statement on Enforcement Efforts Against Discrimination and Bias in Automated Systems | 2023-04 | unknown |
 | Executive Office of the President | `EO-13859` | Maintaining American Leadership in Artificial Intelligence | 2019-02-11 | in force |
 |  | `EO-13960` | Promoting the Use of Trustworthy Artificial Intelligence in the Federal Government | 2020-12-03 | in force |
 |  | `EO-14110` | Safe, Secure, and Trustworthy Development and Use of Artificial Intelligence | 2023-10-30 | revoked |
@@ -189,29 +191,29 @@ for i, r in enumerate(rows):
 |  | `EO-14434` | Inaugurating the Era of Super Intelligence | 2026-09-29 | in force |
 | Federal Trade Commission | `FTC-AI-POLICY-STATEMENT-2026-PROPOSED` | Policy Statement Concerning the Suppression of Accuracy in Artificial Intelligence Systems (proposed) | 2026-07-07 | draft |
 | National Institute of Standards and Technology | `NIST-AI-100-1` | Artificial Intelligence Risk Management Framework (AI RMF 1.0) | 2023-01 | current |
-|  | `NIST-AI-100-2E2023` | Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (2023 edition) | 2024-01 | unknown |
+|  | `NIST-AI-100-2E2023` | Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (2023 edition) | 2024-01 | earlier edition |
+|  | `NIST-AI-100-5` | A Plan for Global Engagement on AI Standards | 2024-07 | unknown |
 |  | `NIST-AI-600-1` | Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile | 2024-07 | current |
+|  | `NIST-SP-800-218A` | Secure Software Development Practices for Generative AI and Dual-Use Foundation Models: An SSDF Community Profile | 2024-07-26 | current |
 |  | `NIST-AI-100-4` | Reducing Risks Posed by Synthetic Content | 2024-11 | unknown |
 |  | `NIST-AI-100-2E2025` | Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (2025 edition) | 2025-03 | unknown |
+|  | `NIST-IR-8596-DRAFT` | Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile), Preliminary Draft | 2025-12-16 | draft |
+| National Institute of Standards and Technology (U.S. AI Safety Institute) | `NIST-AI-800-1-DRAFT` | Managing Misuse Risk for Dual-Use Foundation Models (Second Public Draft) | 2025-01 | draft |
 | National Institutes of Health | `NIH-NOT-OD-23-149` | The Use of Generative Artificial Intelligence Technologies is Prohibited for the NIH Peer Review Process | 2023-06-23 | in force |
 |  | `NIH-NOT-OD-25-132` | Supporting Fairness and Originality in NIH Research Applications | 2025-07-17 | in force |
-| NIST | `NIST-SP-800-218A` | Secure Software Development Practices for Generative AI and Dual-Use Foundation Models: An SSDF Community Profile | 2024-07-26 | current |
-|  | `NIST-IR-8596-DRAFT` | Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile), Preliminary Draft | 2025-12-16 | draft |
-|  | `NIST-AI-100-5` | A Plan for Global Engagement on AI Standards | — | unknown |
-| NIST (U.S. AI Safety Institute) | `NIST-AI-800-1-DRAFT` | Managing Misuse Risk for Dual-Use Foundation Models (Second Public Draft) | — | draft |
 | Office of Management and Budget | `OMB-M-21-06` | Guidance for Regulation of Artificial Intelligence Applications | 2020-11-17 | in force |
 |  | `OMB-M-24-10` | Advancing Governance, Innovation, and Risk Management for Agency Use of Artificial Intelligence | 2024-03-28 | rescinded |
 |  | `OMB-M-24-18` | Advancing the Responsible Acquisition of Artificial Intelligence in Government | 2024-09-24 | rescinded |
 |  | `OMB-M-25-21` | Accelerating Federal Use of AI through Innovation, Governance, and Public Trust | 2025-04-03 | in force |
 |  | `OMB-M-25-22` | Driving Efficient Acquisition of Artificial Intelligence in Government | 2025-04-03 | in force |
 |  | `OMB-M-26-04` | Increasing Public Trust in Artificial Intelligence Through Unbiased AI Principles | 2025-12-11 | in force |
-| The White House | `WH-AI-ACTION-PLAN-2025` | Winning the Race: America's AI Action Plan | 2025-07 | unknown |
+| The White House | `WH-AI-ACTION-PLAN-2025` | Winning the Race: America's AI Action Plan | 2025-07 | current |
 | U.S. Congress | `PL-119-12` | Tools to Address Known Exploitation by Immobilizing Technological Deepfakes on Websites and Networks Act (TAKE IT DOWN Act) | 2025-05-19 | in force |
-| U.S. Congress (codified by Office of the Law Revision Counsel; published by GPO) | `USC-15-CH119` | 15 U.S.C. Chapter 119 — National Artificial Intelligence Initiative (codified National AI Initiative Act of 2020, Div. E of Pub. L. 116-283) | — | in force |
+| U.S. Congress (codified by Office of the Law Revision Counsel; published by GPO) | `USC-15-CH119` | 15 U.S.C. Chapter 119 — National Artificial Intelligence Initiative (codified National AI Initiative Act of 2020, Div. E of Pub. L. 116-283) | 2023 | in force |
 | U.S. Copyright Office | `USCO-AI-REGISTRATION-2023` | Copyright Registration Guidance: Works Containing Material Generated by Artificial Intelligence | 2023-03-16 | unknown |
 |  | `USCO-AI-PART-1` | Copyright and Artificial Intelligence, Part 1: Digital Replicas | 2024-07 | current |
 |  | `USCO-AI-PART-2` | Copyright and Artificial Intelligence, Part 2: Copyrightability | 2025-01 | current |
-|  | `USCO-AI-PART-3` | Copyright and Artificial Intelligence, Part 3: Generative AI Training (pre-publication version) | 2025-05 | draft |
+|  | `USCO-AI-PART-3` | Copyright and Artificial Intelligence, Part 3: Generative AI Training (pre-publication version) | 2025-05 | pre-publication |
 | U.S. Department of Education | `ED-FR-2025-13650` | Proposed Priority and Definitions-Secretary's Supplemental Priority and Definitions on Advancing Artificial Intelligence in Education | 2025-07-21 | superseded |
 |  | `ED-FR-2026-07087` | Final Priority and Definitions-Secretary's Supplemental Priority and Definitions on Advancing Artificial Intelligence in Education | 2026-04-13 | in force |
 |  | `ED-FR-2026-22615` | Proposed Priorities and Definitions-Secretary's Supplemental Priorities and Definitions | 2026-11-05 | draft |
@@ -222,10 +224,10 @@ for i, r in enumerate(rows):
 |  | `ED-OET-POSTSECONDARY-2025` | Navigating Artificial Intelligence in Postsecondary Education: Building Capacity for the Road Ahead | 2025-01 | unknown |
 | U.S. Department of Education, Office of the Secretary | `ED-DCL-AI-2025-07-22` | Dear Colleague Letter: Guidance on the Use of Federal Grant Funds to Improve Education Outcomes Using Artificial Intelligence (AI) | 2025-07-22 | current |
 | U.S. Department of Labor | `DOL-AI-WORKER-PRINCIPLES-2024` | Artificial Intelligence and Worker Well-being: Principles and Best Practices for Developers and Employers | 2024-10 | removed from agency site |
-| U.S. Equal Employment Opportunity Commission | `EEOC-ADA-AI-2022` | The Americans with Disabilities Act and the Use of Software, Algorithms, and Artificial Intelligence to Assess Job Applicants and Employees | 2022-05-12 | removed from agency site |
+| U.S. Equal Employment Opportunity Commission | `EEOC-ADA-AI-2022` | The Americans with Disabilities Act and the Use of Software, Algorithms, and Artificial Intelligence to Assess Job Applicants and Employees | 2022-05 | removed from agency site |
 |  | `EEOC-TITLE-VII-AI-2023` | Select Issues: Assessing Adverse Impact in Software, Algorithms, and Artificial Intelligence Used in Employment Selection Procedures Under Title VII of the Civil Rights Act of 1964 | 2023-05-18 | removed from agency site |
-| U.S. Government Accountability Office | `GAO-21-519SP` | Artificial Intelligence: An Accountability Framework for Federal Agencies and Other Entities | — | unknown |
-|  | `GAO-25-107653` | Artificial Intelligence: Generative AI Use and Management at Federal Agencies | — | unknown |
+| U.S. Government Accountability Office | `GAO-21-519SP` | Artificial Intelligence: An Accountability Framework for Federal Agencies and Other Entities | 2021-06 | report |
+|  | `GAO-25-107653` | Artificial Intelligence: Generative AI Use and Management at Federal Agencies | 2025-07 | report |
 | U.S. National Science Foundation | `NSF-GAI-MERIT-REVIEW-2023` | Notice to Research Community: Use of Generative Artificial Intelligence Technology in the NSF Merit Review Process | 2023-12-14 | in force |
 | U.S. Office of Personnel Management | `OPM-GENAI-FEDERAL-WORKFORCE-2024` | Responsible Use of Generative Artificial Intelligence for the Federal Workforce | 2024-04 | removed from agency site |
 | White House Office of Science and Technology Policy | `OSTP-AI-BILL-OF-RIGHTS-2022` | Blueprint for an AI Bill of Rights: Making Automated Systems Work for the American People | 2022-10 | removed from agency site |

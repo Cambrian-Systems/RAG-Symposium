@@ -41,11 +41,9 @@ This writes `data/documents.jsonl`, one record per page, and prints
 `Published 1847 records from 62 documents (page mode) to data/documents.jsonl`.
 See [Ingestion](#ingestion) for the other chunking modes.
 
-While you are online, download the small embedding model hybrid search uses
-(about 30 MB, once), then check the laptop is ready:
+Then check the laptop is ready:
 
 ```sh
-uv run rag-search "test" --mode hybrid
 uv run rag-check
 ```
 
@@ -54,7 +52,7 @@ uv run rag-check
 
 ```text
 PASS  export: data/documents.jsonl has 1847 records
-PASS  embedding model: minishlab/potion-base-8M loads offline (256 dimensions)
+PASS  embedding model: /path/to/RAG-Symposium/models/potion-base-8M loads offline (256 dimensions)
 PASS  keyword search: 5 results for 'Generative Artificial Intelligence: Overview, Issu', first CRS-IF12426-p1
 PASS  hybrid search: 5 results for 'Generative Artificial Intelligence: Overview, Issu', first CRS-R47644-p3
 ```
@@ -236,7 +234,7 @@ Start at offset 0 to read from the beginning. Follow `next_offset` until it is
 | --- | --- |
 | `--transport stdio` or `--transport http` | Default `stdio`; the helper selects `http` |
 | `--search keyword`, `bm25` or `hybrid` | Default `keyword`, or `RAG_SEARCH_MODE`; see [Search modes](#search-modes) |
-| `--embed-model NAME_OR_FOLDER` | Hybrid only. Default `minishlab/potion-base-8M`, or `RAG_EMBED_MODEL` |
+| `--embed-model NAME_OR_FOLDER` | Hybrid only. Default: the bundled `models/potion-base-8M`, or `RAG_EMBED_MODEL` |
 | `--data PATH` | Overrides `RAG_DATA_PATH`, otherwise uses `data/documents.jsonl` relative to the server's working directory |
 | `--port NUMBER` | HTTP port, default 8765 |
 | `--allow-origin ORIGIN` | HTTP-only, repeatable; allows a specific browser origin |
@@ -332,8 +330,9 @@ Hybrid mode embeds every record with
 [potion-base-8M](https://huggingface.co/minishlab/potion-base-8M) (MIT license),
 a ~30 MB static embedding model that runs on a laptop CPU: the whole corpus
 embeds in about a second when the server first searches, and again whenever the
-export changes. The first run downloads the model from Hugging Face. To work
-offline, point `--embed-model` at a downloaded copy of the model folder. Each
+export changes. A copy of the model ships in [models/](models/potion-base-8M), so
+hybrid search needs no download; `--embed-model` can name another local folder
+or a Hugging Face model to compare. Each
 hybrid result's `ranks` shows where BM25 and the embeddings placed it, so you can
 see which method found it.
 
