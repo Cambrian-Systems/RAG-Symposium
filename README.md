@@ -70,6 +70,26 @@ Use `http://127.0.0.1:8765/mcp` in a compatible MCP client. Keep the command
 running; Ctrl+C stops it. This is a protocol endpoint, not a chat webpage.
 Before ingestion, `data_status` should report zero records.
 
+## Workshop setup with OpenCode
+
+The workshop uses [OpenCode](https://opencode.ai), a free, open-source agent
+that can run commands, edit files and call this repo's search tools. Its
+built-in free models work without an account. [opencode.jsonc](opencode.jsonc)
+in this folder tells it how to start the search server, and turns web search
+off so answers come from the documents here.
+
+1. Install OpenCode from <https://opencode.ai> and install
+   [uv](https://docs.astral.sh/uv/).
+2. Open this folder in OpenCode and pick a free model.
+3. Paste: `Run uv sync --locked, then uv run rag-ingest, then uv run rag-check, and tell me whether every line says PASS.`
+4. Start a new session and ask: `What tools do you have, and is the data loaded?`
+   It should call `rag_data_status` and report 1,847 records.
+
+After changing `opencode.jsonc` or `src/rag_symposium/server.py`, start a new
+session so the search server restarts with the change. Tested with the OpenCode
+command-line version 2.2.7 on Linux and the free model `glm-5.3-flash-free`;
+any other MCP-capable client can use [mcp.example.json](mcp.example.json).
+
 ## Repository map
 
 | File | What to learn from it |

@@ -1,0 +1,23 @@
+{
+  // Workshop setup for OpenCode (https://opencode.ai). Open this folder in
+  // OpenCode and it starts the search server below and offers its three tools:
+  // rag_data_status, rag_search_documents and rag_get_document.
+  "$schema": "https://opencode.ai/config.json",
+  // Keep answers on the documents in this repo: no web search, no web fetch.
+  "websearch": false,
+  "permissions": [
+    { "action": "webfetch", "resource": "*", "effect": "deny" }
+  ],
+  "mcp": {
+    "servers": {
+      "rag": {
+        "type": "local",
+        // Change "bm25" to "hybrid" (or "keyword") to switch search modes, then
+        // start a new session so the server restarts.
+        "command": ["uv", "run", "--locked", "rag-symposium", "--search", "bm25"],
+        // Show each tool call by name instead of wrapping tools in code.
+        "codemode": false
+      }
+    }
+  }
+}
