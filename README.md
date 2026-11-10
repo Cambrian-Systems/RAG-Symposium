@@ -73,17 +73,29 @@ Before ingestion, `data_status` should report zero records.
 ## Workshop setup with OpenCode
 
 The workshop uses [OpenCode](https://opencode.ai), a free, open-source agent
-that can run commands, edit files and call this repo's search tools. Its
-built-in free models work without an account. [opencode.jsonc](opencode.jsonc)
-in this folder tells it how to start the search server, and turns web search
-off so answers come from the documents here.
+that can run commands, edit files and call this repo's search tools.
+[opencode.jsonc](opencode.jsonc) in this folder tells it how to start the
+search server, and turns its web tools off so answers come from the documents
+here. [WORKSHOP.md](WORKSHOP.md) has every prompt used in the session, in
+order, ready to copy.
 
-1. Install OpenCode from <https://opencode.ai> and install
-   [uv](https://docs.astral.sh/uv/).
-2. Open this folder in OpenCode and pick a free model.
-3. Paste: `Run uv sync --locked, then uv run rag-ingest, then uv run rag-check, and tell me whether every line says PASS.`
-4. Start a new session and ask: `What tools do you have, and is the data loaded?`
+1. Install the OpenCode desktop app from <https://opencode.ai/desktop>.
+2. Download this folder (**Code › Download ZIP**), unzip it and open it in
+   OpenCode.
+3. Connect a model: type `/connect`, then `/models`. In the workshop most
+   people paste the workshop key (choose **OpenCode**, then the model
+   **GLM-5.3-Flash**). You can instead sign in with ChatGPT Plus or Pro
+   (choose **OpenAI**) or GitHub Copilot, or paste your own API key.
+   OpenCode also has free models that need no account, but they have a usage
+   limit that a room of people can reach quickly.
+4. Paste: `If uv is not installed on this computer, install it for this user only, following https://docs.astral.sh/uv/ . Then run uv sync --locked, then uv run rag-ingest, then uv run rag-check, and tell me whether every line says PASS.`
+5. Start a new session and ask: `What tools do you have, and is the data loaded?`
    It should call `rag_data_status` and report 1,847 records.
+
+The tools are the same whichever model you connect: OpenCode supplies the ones
+for reading files and running commands, and this folder supplies the three
+`rag_` search tools. Models differ in how well they use them, which is what
+the evaluation step measures.
 
 If the answer does not name the three `rag_` tools, OpenCode could not start
 the search server, usually because it cannot find `uv`. Ask it: `Find the full
@@ -92,7 +104,7 @@ in opencode.jsonc.` Then start a new session.
 
 After changing `opencode.jsonc` or `src/rag_symposium/server.py`, start a new
 session so the search server restarts with the change. Tested with the OpenCode
-command-line version 2.2.7 on Linux and the free model `glm-5.3-flash-free`;
+command-line version 2.2.7 on Linux and the model GLM-5.3-Flash (free tier);
 any other MCP-capable client can use [mcp.example.json](mcp.example.json).
 
 ## Repository map
