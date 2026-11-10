@@ -15,11 +15,15 @@ from rag_symposium.store import RecordStore
 CORPUS = Path(__file__).resolve().parent.parent / "corpus" / "docs"
 
 
-def document(doc_id="DOC1", pages=("first page text", "second page text")):
-    """Build corpus-format Markdown: a JSON-valued header, then marked pages."""
+def document(doc_id="DOC1", pages=("first page text", "second page text"), **fields):
+    """Build corpus-format Markdown: a JSON-valued header, then marked pages.
+
+    fields adds or replaces header fields; a value of None leaves the field out.
+    """
     header = {"id": doc_id, "title": f"Title {doc_id}", "published": "Aug 2025",
-              "revised": "", "topics": ["wheat"], "source_url": f"https://example.test/{doc_id}",
-              "credit": f"Credit {doc_id}"}
+              "revised": "", "topics": ["testing"], "source_url": f"https://example.test/{doc_id}",
+              "credit": f"Credit {doc_id}", **fields}
+    header = {k: v for k, v in header.items() if v is not None}
     body = "\n\n".join(f"<!-- page {n} -->\n{text}" for n, text in enumerate(pages, 1))
     return "---\n" + "\n".join(f"{k}: {json.dumps(v)}" for k, v in header.items()) + "\n---\n\n" + body + "\n"
 
@@ -56,6 +60,28 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(records[1]["metadata"]["pages"], [3])
         self.assertEqual(records[1]["metadata"]["document_id"], "DOC1")
         self.assertEqual(records[1]["source"], "https://example.test/DOC1")
+
+    def test_status_and_aliases_reach_every_record(self):
+        """Status, issuer, aliases and replacement links ride along in metadata."""
+        self.write("DOC1.md", document(
+            aliases=["Doc 1", "D-1"], issuer="Test Office", status="superseded",
+            status_note="Replaced by DOC2 in 2025.", replaces=["DOC0"], replaced_by=["DOC2"]))
+        ingest(self.corpus, self.output)
+        for record in self.exported():
+            metadata = record["metadata"]
+            self.assertEqual(metadata["aliases"], ["Doc 1", "D-1"])
+            self.assertEqual(metadata["issuer"], "Test Office")
+            self.assertEqual(metadata["status"], "superseded")
+            self.assertEqual(metadata["status_note"], "Replaced by DOC2 in 2025.")
+            self.assertEqual((metadata["replaces"], metadata["replaced_by"]), (["DOC0"], ["DOC2"]))
+
+    def test_missing_optional_fields_get_empty_defaults(self):
+        """A header with only id, title and source_url still ingests."""
+        self.write("DOC1.md", document(published=None, revised=None, topics=None, credit=None))
+        ingest(self.corpus, self.output)
+        metadata = self.exported()[0]["metadata"]
+        self.assertEqual((metadata["status"], metadata["issuer"], metadata["aliases"],
+                          metadata["replaced_by"], metadata["published"]), ("", "", [], [], ""))
 
     def test_document_mode_is_one_record_per_file(self):
         self.write("DOC1.md", document())
