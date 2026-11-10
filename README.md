@@ -82,12 +82,12 @@ order, ready to copy.
 1. Install the OpenCode desktop app from <https://opencode.ai/desktop>.
 2. Download this folder (**Code › Download ZIP**), unzip it and open it in
    OpenCode.
-3. Connect a model: type `/connect`, then `/models`. In the workshop most
-   people paste the workshop key (choose **OpenCode**, then the model
-   **GLM-5.3-Flash**). You can instead sign in with ChatGPT Plus or Pro
-   (choose **OpenAI**) or GitHub Copilot, or paste your own API key.
-   OpenCode also has free models that need no account, but they have a usage
-   limit that a room of people can reach quickly.
+3. Connect a model: type `/connect`, then `/models`. Sign in with ChatGPT
+   Plus or Pro (choose **OpenAI**) or GitHub Copilot (the free plan works), or
+   paste your own API key. In the workshop, anyone without one of those pastes
+   the workshop key (choose **OpenCode**, then the model **GLM-5.3-Flash**).
+   OpenCode also has free models that need no account, but their usage limit
+   is too low to rely on.
 4. Paste: `If uv is not installed on this computer, install it for this user only, following https://docs.astral.sh/uv/ . Then run uv sync --locked, then uv run rag-ingest, then uv run rag-check, and tell me whether every line says PASS.`
 5. Start a new session and ask: `What tools do you have, and is the data loaded?`
    It should call `rag_data_status` and report 1,847 records.

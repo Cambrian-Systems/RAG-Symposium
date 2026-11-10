@@ -17,17 +17,18 @@ USB sticks on the tables.
 open the folder in OpenCode. Open the `RAG-Symposium` folder itself, not the
 folder above it.
 
-**3. Connect a model.** Type `/connect` in OpenCode and pick one of these:
+**3. Connect a model.** Type `/connect` in OpenCode. Use an account you
+already have if it is on this list; otherwise use the workshop key.
 
 | You have | Choose | Then |
 |---|---|---|
-| Nothing (most people) | **OpenCode** | Paste the workshop key from the sheet on your table. Type `/models` and pick **GLM-5.3-Flash**. |
 | ChatGPT Plus or Pro | **OpenAI** | Choose **Sign in with ChatGPT**. Type `/models` and pick a model. |
 | GitHub Copilot, including Copilot Free | **GitHub Copilot** | Sign in with GitHub. Type `/models` and pick a model. |
 | Your own API key | Your provider | Paste the key. Type `/models` and pick a model. |
+| None of these | **OpenCode** | Paste the workshop key from the sheet on your table. Type `/models` and pick **GLM-5.3-Flash**. |
 
-The free ChatGPT plan and Claude Pro/Max subscriptions cannot sign in to
-OpenCode. Use the workshop key instead.
+The free ChatGPT plan, Claude Pro/Max subscriptions and Microsoft 365 Copilot
+cannot sign in to OpenCode. Use the workshop key instead.
 
 Whichever model you connect, the tools are the same: they come from OpenCode
 and from this folder, not from the model. What changes is how well the model
