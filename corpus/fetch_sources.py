@@ -16,6 +16,11 @@ document per object. This script downloads each file once (cached in
 corpus/.cache/), turns it into plain text with page markers, and writes
 corpus/docs/<id>.md plus corpus/manifest.jsonl.
 
+Federal Register documents (executive orders and agency notices) are taken from
+the Register's own plain-text edition rather than the PDF: it carries the same
+page breaks, but only that document's text, with no neighbouring notice sharing
+its first or last page and no words split across line ends.
+
 Status ("in force", "revoked", "rescinded", ...) is never guessed. For executive
 orders it is read from the Federal Register's own disposition notes at snapshot
 time. For everything else it comes from sources.jsonl, where each status carries
@@ -90,6 +95,8 @@ def clean(text: str) -> str:
     which otherwise hide words like "defined" from a word search.
     """
     text = unicodedata.normalize("NFKC", text).replace("\u00ad", "")
+    # Drop form feeds and other control characters that some text editions carry.
+    text = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", " ", text)
     text = re.sub(r"[ \t]+\n", "\n", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
@@ -158,9 +165,46 @@ def html_pages(data: bytes, selector: str | None = None) -> list[str]:
     return [clean(section) for section in sections + [current] if section.strip()]
 
 
+def fr_record(source: dict) -> dict:
+    """The Federal Register's own record for a document, downloaded once."""
+    CACHE.mkdir(exist_ok=True)
+    path = CACHE / (source["id"] + ".fr.json")
+    if not path.exists():
+        path.write_bytes(get(FR_API.format(number=source["fr_document_number"])))
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def fr_pages(source: dict) -> tuple[bytes, list[str]]:
+    """A Federal Register document's plain text, one string per printed page.
+
+    The text edition marks each page break as [[Page 69737]]. Text before the
+    first marker belongs to the document's first page; some documents also mark
+    that first page, so text is grouped by page number rather than by marker.
+    """
+    CACHE.mkdir(exist_ok=True)
+    path = CACHE / (source["id"] + ".fr.txt")
+    if not path.exists():
+        path.write_bytes(get(fr_record(source)["raw_text_url"]))
+    data = path.read_bytes()
+    page = data.decode("utf-8", errors="replace")
+    body = re.search(r"<pre>(.*)</pre>", page, flags=re.S)
+    text = html.unescape(re.sub(r"<[^>]+>", "", body.group(1) if body else page))
+    # re.split with a capture group alternates text and page numbers.
+    parts = re.split(r"\[\[Page (\d+)\]\]", text)
+    first = int(fr_record(source).get("start_page") or (parts[1] if len(parts) > 1 else 1))
+    by_page: dict[int, str] = {first: parts[0]}
+    for number, chunk in zip(parts[1::2], parts[2::2]):
+        by_page[int(number)] = by_page.get(int(number), "") + "\n" + chunk
+    # A separately printed part can carry a cover page that lists other
+    # documents. It is numbered before this document's first page; leave it out.
+    last = int(fr_record(source).get("end_page") or max(by_page))
+    pages = [clean(by_page[number]) for number in sorted(by_page) if first <= number <= last]
+    return data, [page for page in pages if page]
+
+
 def executive_order_status(source: dict) -> dict:
     """Read an executive order's status from the Federal Register disposition notes."""
-    record = json.loads(get(FR_API.format(number=source["fr_document_number"])))
+    record = fr_record(source)
     notes = (record.get("disposition_notes") or "").strip()
     today = date.today().isoformat()
     revoked = re.search(r"Revoked by:\s*(.+?)(?:\n|$)", notes)
@@ -184,13 +228,16 @@ def executive_order_status(source: dict) -> dict:
 
 def build(source: dict) -> tuple[dict, list[str]]:
     """Return a document's header and its page texts."""
-    data = cached(source)
-    pages = pdf_pages(data) if source.get("format", "pdf") == "pdf" else html_pages(data, source.get("html_after"))
+    if source.get("fr_document_number"):
+        data, pages = fr_pages(source)
+    else:
+        data = cached(source)
+        pages = pdf_pages(data) if source.get("format", "pdf") == "pdf" else html_pages(data, source.get("html_after"))
     header = {"aliases": [], "revised": "", "status": "unknown", "status_note": "", "status_evidence": "",
               "replaces": [], "replaced_by": [], "topics": [], "license_note": PUBLIC_DOMAIN}
     header.update({key: value for key, value in source.items() if key in FIELDS})
     header["source_url"] = source.get("landing_url") or source["url"]
-    if source.get("fr_document_number"):
+    if source["id"].startswith("EO-"):
         header.update(executive_order_status(source))
     when = header.get("revised") or header.get("published", "")
     header.setdefault("credit", f"{header['issuer']}, {header['title']}, {when}.".replace(", .", "."))
