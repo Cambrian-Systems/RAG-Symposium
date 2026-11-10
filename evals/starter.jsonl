@@ -1,26 +1,26 @@
-{"id": "s01", "category": "fact", "question": "What nitrate level in forage is dangerous to cattle?", "expect": ["MF3029", "S115"]}
-{"id": "s02", "category": "fact", "question": "What is the most common cause of hay fires?", "expect": ["MF2853"], "pages": [1]}
-{"id": "s03", "category": "fact", "question": "Below what moisture level should large round bales be baled to keep heating down?", "expect": ["MF2853"], "pages": [2]}
-{"id": "s04", "category": "fact", "question": "Which forage crops can cause prussic acid poisoning in cattle?", "expect": ["MF3040", "MF3607"]}
-{"id": "s05", "category": "fact", "question": "What three yield components are used to estimate wheat yield?", "expect": ["MF3044"], "pages": [1]}
-{"id": "s06", "category": "fact", "question": "What are the four methods for harvesting canola?", "expect": ["MF3092"], "pages": [1]}
-{"id": "s07", "category": "fact", "question": "What does Russian wheat aphid feeding damage look like on the leaves?", "expect": ["MF2666"]}
-{"id": "s08", "category": "fact", "question": "What is patch burn grazing?", "expect": ["MF3073"], "pages": [1]}
-{"id": "s09", "category": "fact", "question": "Has wheat blast been detected in the United States?", "expect": ["MF3583"], "pages": [1]}
-{"id": "s10", "category": "fact", "question": "How should a field sprayer be rinsed after applying herbicide?", "expect": ["MF1089"]}
-{"id": "s11", "category": "fact", "question": "What are the symptoms of flag smut in wheat?", "expect": ["MF3235", "MF2994"]}
-{"id": "s12", "category": "fact", "question": "How does prescribed burning in the Flint Hills affect ozone levels?", "expect": ["MF3357"]}
-{"id": "s13", "category": "fact", "question": "How many soybean seeds per acre should I plant?", "expect": ["MF3460", "C449"]}
-{"id": "s14", "category": "paraphrase", "question": "My hay bales are warm inside. Should I be worried?", "expect": ["MF2853"]}
-{"id": "s15", "category": "paraphrase", "question": "How do I know when there are enough aphids on my soybeans to spray?", "expect": ["MF2582"], "pages": [3]}
-{"id": "s16", "category": "paraphrase", "question": "Is there a phone app for deciding when to pull cattle off wheat pasture?", "expect": ["MF3304"]}
-{"id": "s17", "category": "paraphrase", "question": "How is the heat a crop accumulates each day counted toward its development?", "expect": ["MF3740"]}
-{"id": "s18", "category": "paraphrase", "question": "How long does a hard frost have to last to hurt wheat in the spring?", "expect": ["C646"]}
-{"id": "s19", "category": "paraphrase", "question": "Which insects in alfalfa hay can poison horses?", "expect": ["MF959", "C683"]}
-{"id": "s20", "category": "exact-id", "question": "What is MF3612 about?", "expect": ["MF3612"]}
-{"id": "s21", "category": "exact-id", "question": "Summarize S84.", "expect": ["S84"]}
-{"id": "s22", "category": "exact-id", "question": "What does publication L814 cover?", "expect": ["L814"]}
-{"id": "s23", "category": "not-in-data", "question": "What is today's price for Kansas wheat futures?", "expect": []}
-{"id": "s24", "category": "not-in-data", "question": "How do I grow rice in Kansas?", "expect": []}
-{"id": "s25", "category": "not-in-data", "question": "Which hop varieties grow well in Kansas?", "expect": []}
-{"id": "s26", "category": "not-in-data", "question": "Can I grow pistachios in Kansas?", "expect": []}
+{"id": "s01", "category": "fact", "question": "I'm reviewing for an NIH study section. Am I allowed to use ChatGPT to help write my critiques?", "expect": ["NIH-NOT-OD-23-149"], "pages": [1]}
+{"id": "s02", "category": "fact", "question": "Should I tell NSF if I used generative AI to help write my grant proposal?", "expect": ["NSF-GAI-MERIT-REVIEW-2023"], "pages": [1, 2]}
+{"id": "s03", "category": "fact", "question": "If I write a really detailed prompt for an image generator, do I own the copyright in the picture it makes?", "expect": ["USCO-AI-PART-2"], "pages": [26]}
+{"id": "s04", "category": "fact", "question": "When I register a book with the Copyright Office, do I have to tell them some of the illustrations were made with AI?", "expect": ["USCO-AI-REGISTRATION-2023"], "pages": [4]}
+{"id": "s05", "category": "fact", "question": "If a federal agency buys an AI tool, can the vendor use the agency's data to train its commercial models?", "expect": ["OMB-M-25-22"], "pages": [6]}
+{"id": "s06", "category": "fact", "question": "Is a federal agency using AI to screen job applicants considered high-impact AI?", "expect": ["OMB-M-25-21"], "pages": [21, 22]}
+{"id": "s07", "category": "fact", "question": "How much did generative AI use grow at federal agencies between 2023 and 2024?", "expect": ["GAO-25-107653"], "pages": [2]}
+{"id": "s08", "category": "fact", "question": "How quickly does a website have to take down a fake explicit image of someone after they ask?", "expect": ["PL-119-12"], "pages": [6]}
+{"id": "s09", "category": "fact", "question": "What is the Presidential AI Challenge for students and teachers?", "expect": ["EO-14277"], "pages": [2]}
+{"id": "s10", "category": "fact", "question": "What are the four core functions of the NIST AI Risk Management Framework?", "expect": ["NIST-AI-100-1"], "pages": [8]}
+{"id": "s11", "category": "fact", "question": "How does federal law define artificial intelligence?", "expect": ["USC-15-CH119"], "pages": [1]}
+{"id": "s12", "category": "fact", "question": "What principles must AI chatbots bought by the federal government follow to avoid political bias?", "expect": ["OMB-M-26-04", "EO-14319"], "pages": [1, 2]}
+{"id": "s13", "category": "exact-id", "question": "What does M-25-21 require of agency Chief AI Officers?", "expect": ["OMB-M-25-21"], "pages": [10]}
+{"id": "s14", "category": "exact-id", "question": "What does Executive Order 14434 tell agencies to call AI?", "expect": ["EO-14434"], "pages": [1]}
+{"id": "s15", "category": "exact-id", "question": "What does NIST SP 800-218A recommend for protecting model weights?", "expect": ["NIST-SP-800-218A"], "pages": [20]}
+{"id": "s16", "category": "exact-id", "question": "What does NOT-OD-25-132 say about grant applications written with AI?", "expect": ["NIH-NOT-OD-25-132"], "pages": [1]}
+{"id": "s17", "category": "paraphrase", "question": "Why does ChatGPT make up facts and fake citations, and what does NIST call that?", "expect": ["NIST-AI-600-1"], "pages": [8, 10]}
+{"id": "s18", "category": "paraphrase", "question": "Should there be a federal law against someone making an AI clone of my voice without permission?", "expect": ["USCO-AI-PART-1"], "pages": [11]}
+{"id": "s19", "category": "paraphrase", "question": "Could a school get in civil rights trouble for failing students because an AI cheating checker flagged their essays?", "expect": ["ED-OCR-AI-2024"], "pages": [2]}
+{"id": "s20", "category": "paraphrase", "question": "When is the deadline to comment on the Education Department's plan to stop using the term AI in its grant priorities?", "expect": ["ED-FR-2026-22615"], "pages": [2]}
+{"id": "s21", "category": "paraphrase", "question": "Do the federal AI purchasing rules apply to ordinary office software that just has AI spell-check built in?", "expect": ["OMB-M-25-22"], "pages": [3]}
+{"id": "s22", "category": "paraphrase", "question": "Can federal education grant money pay for a chatbot that helps students plan their courses and careers?", "expect": ["ED-DCL-AI-2025-07-22"], "pages": [1]}
+{"id": "s23", "category": "not-in-data", "question": "What is K-State's policy on students using generative AI in their coursework?", "expect": []}
+{"id": "s24", "category": "not-in-data", "question": "How much does a ChatGPT Edu license cost per user for a university?", "expect": []}
+{"id": "s25", "category": "not-in-data", "question": "What does the Kansas Board of Regents require of faculty who use AI to grade?", "expect": []}
+{"id": "s26", "category": "not-in-data", "question": "What does the Texas Responsible AI Governance Act require of state agencies?", "expect": []}
