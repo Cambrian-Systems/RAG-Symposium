@@ -13,5 +13,6 @@ data/*
 !data/README.md
 # Source PDFs are re-downloadable; the committed corpus is their extracted text.
 corpus/.pdf-cache/
+corpus/.cache/
 # Built distribution archives are recreated from source when needed.
 dist/
