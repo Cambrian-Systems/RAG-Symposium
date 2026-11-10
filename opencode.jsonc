@@ -3,10 +3,13 @@
   // OpenCode and it starts the search server below and offers its three tools:
   // rag_data_status, rag_search_documents and rag_get_document.
   "$schema": "https://opencode.ai/config.json",
-  // Keep answers on the documents in this repo: no web search, no web fetch.
+  // Keep answers on the documents in this repo: no web search, no web fetch,
+  // and no Code Mode or built-in browser, which can also reach the web.
   "websearch": false,
   "permissions": [
-    { "action": "webfetch", "resource": "*", "effect": "deny" }
+    { "action": "webfetch", "resource": "*", "effect": "deny" },
+    { "action": "execute", "resource": "*", "effect": "deny" },
+    { "action": "browser", "resource": "*", "effect": "deny" }
   ],
   "mcp": {
     "servers": {
