@@ -85,6 +85,11 @@ off so answers come from the documents here.
 4. Start a new session and ask: `What tools do you have, and is the data loaded?`
    It should call `rag_data_status` and report 1,847 records.
 
+If the answer does not name the three `rag_` tools, OpenCode could not start
+the search server, usually because it cannot find `uv`. Ask it: `Find the full
+path of the uv program on this computer and put that full path in place of "uv"
+in opencode.jsonc.` Then start a new session.
+
 After changing `opencode.jsonc` or `src/rag_symposium/server.py`, start a new
 session so the search server restarts with the change. Tested with the OpenCode
 command-line version 2.2.7 on Linux and the free model `glm-5.3-flash-free`;
