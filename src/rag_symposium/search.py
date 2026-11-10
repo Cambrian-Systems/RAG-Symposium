@@ -3,7 +3,10 @@
 No model or chat client is involved, so the result depends only on the query,
 the export and the search mode. Useful for comparing modes side by side:
 
-    uv run rag-search "How do I control cheatgrass in wheat?" --mode keyword --mode bm25
+    uv run rag-search "What does the document say about record keeping?" --mode keyword --mode bm25
+
+Each result line shows the record ID, its document's date and status (such as
+"in force" or "rescinded"), and its title.
 """
 import argparse
 import os
@@ -29,12 +32,18 @@ def main():
         store = RecordStore(args.data, mode, Embedder(args.embed_model) if mode == "hybrid" else None)
         result = store.search(args.query, args.k)
         print(f"\n{mode}")
-        for position, match in enumerate(result["matches"], 1):
+        # Pad IDs and statuses to the longest one shown so the columns line up.
+        # An export without statuses gets no status column.
+        statuses = [m["metadata"].get("status") or "" for m in result["matches"]]
+        id_width = max([12, *(len(m["id"]) for m in result["matches"])])
+        status_width = max(map(len, statuses), default=0)
+        for position, (match, status) in enumerate(zip(result["matches"], statuses), 1):
             metadata = match["metadata"]
             date = metadata.get("revised") or metadata.get("published") or ""
+            status = f"{status:<{status_width}} " if status_width else ""
             ranks = match.get("ranks")
             found = f"  (bm25 #{ranks['bm25'] or '-'}, embeddings #{ranks['semantic'] or '-'})" if ranks else ""
-            print(f"  {position}. {match['id']:<12} {date:<9} {match['title'][:56]}{found}")
+            print(f"  {position}. {match['id']:<{id_width}} {date:<9} {status}{match['title'][:56]}{found}")
         if result.get("missing_terms"):
             print(f"  No result contains: {', '.join(result['missing_terms'])}")
 
