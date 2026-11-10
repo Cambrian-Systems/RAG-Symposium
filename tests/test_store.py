@@ -64,10 +64,10 @@ class StoreTests(unittest.TestCase):
 
     def test_excerpt_centres_on_most_matched_words(self):
         """A common word near the top should not pull the excerpt away from the answer."""
-        text = "the cover page " + "filler " * 300 + "the seeding rate for wheat is listed here"
+        text = "the cover page " + "filler " * 300 + "the reporting deadline for agencies is listed here"
         self.publish([self.record(text=text, metadata={"published": "2025"})])
-        match = self.store.search("the seeding rate for wheat")["matches"][0]
-        self.assertIn("seeding rate for wheat", match["text"])
+        match = self.store.search("the reporting deadline for agencies")["matches"][0]
+        self.assertIn("reporting deadline for agencies", match["text"])
         self.assertNotIn("cover", match["text"])
         self.assertEqual(match["metadata"], {"published": "2025"})
 
@@ -129,41 +129,41 @@ class Bm25Tests(unittest.TestCase):
 
     def test_rare_words_outrank_common_ones(self):
         """Keyword mode ties these on word count; bm25 lets the rare word decide."""
-        filler = [self.record(f"f{i}", "how do i control the weeds in wheat") for i in range(5)]
-        self.publish([*filler, self.record("target", "cheatgrass is a weed in wheat")])
-        query = "how do i control cheatgrass in wheat"
+        filler = [self.record(f"f{i}", "how do i control the risks in hiring") for i in range(5)]
+        self.publish([*filler, self.record("target", "deepfakes are a risk in hiring")])
+        query = "how do i control deepfakes in hiring"
         self.assertEqual(self.store.search(query)["matches"][0]["id"], "target")
         self.assertNotEqual(RecordStore(self.path).search(query)["matches"][0]["id"], "target")
 
     def test_pronouns_do_not_decide_the_ranking(self):
         """Rare-but-meaningless words like "my" must not outweigh the subject."""
-        self.publish([*(self.record(f"f{i}", "downy brome is a weed in wheat") for i in range(3)),
-                       self.record("chat", "my farm, I plant my wheat early")])
-        top = self.store.search("how do I get rid of downy brome in my wheat")["matches"][0]
+        self.publish([*(self.record(f"f{i}", "facial recognition is a risk in hiring") for i in range(3)),
+                       self.record("chat", "my office, I review my hiring early")])
+        top = self.store.search("how do I get rid of facial recognition in my hiring")["matches"][0]
         self.assertTrue(top["id"].startswith("f"))
 
-    def test_publication_id_ranks_its_own_pages_first(self):
-        """Pages that cite an ID should not outrank the publication itself."""
-        self.publish([self.record("EP1-p1", "see MF9 and MF9 again for MF9 details", document_id="EP1"),
-                      self.record("MF9-p1", "variety guide text", document_id="MF9")])
-        match = self.store.search("MF9")["matches"][0]
-        self.assertEqual(match["id"], "MF9-p1")
+    def test_document_id_ranks_its_own_pages_first(self):
+        """Pages that cite an ID should not outrank the document itself."""
+        self.publish([self.record("CITES-p1", "see EO-9 and EO-9 again for EO-9 details", document_id="CITES"),
+                      self.record("EO-9-p1", "order text", document_id="EO-9")])
+        match = self.store.search("EO-9")["matches"][0]
+        self.assertEqual(match["id"], "EO-9-p1")
         self.assertTrue(match["id_match"])
 
     def test_plurals_match_and_excerpt_uses_the_word_as_written(self):
-        self.publish([self.record("a", "x " * 400 + "these fungicides protect wheat")])
-        match = self.store.search("fungicide")["matches"][0]
-        self.assertEqual(match["matched_terms"], ["fungicides"])
-        self.assertIn("fungicides protect", match["text"])
+        self.publish([self.record("a", "x " * 400 + "these deepfakes mislead voters")])
+        match = self.store.search("deepfake")["matches"][0]
+        self.assertEqual(match["matched_terms"], ["deepfakes"])
+        self.assertIn("deepfakes mislead", match["text"])
 
     def test_reports_words_no_result_contains(self):
-        self.publish([self.record("a", "pistachio trees"), self.record("b", "wheat in kansas")])
-        result = self.store.search("can I grow quinoa in kansas")
-        self.assertEqual(result["missing_terms"], ["grow", "quinoa"])
-        self.assertEqual(result["unknown_terms"], ["grow", "quinoa"])
-        self.assertIn("No result contains: grow, quinoa", result["notice"])
-        self.assertEqual(result["matches"][0]["missing_terms"], ["grow", "quinoa"])
-        self.assertEqual(self.store.search("wheat kansas")["missing_terms"], [])
+        self.publish([self.record("a", "copyright registration"), self.record("b", "hiring in colleges")])
+        result = self.store.search("can I patent software in colleges")
+        self.assertEqual(result["missing_terms"], ["patent", "software"])
+        self.assertEqual(result["unknown_terms"], ["patent", "software"])
+        self.assertIn("No result contains: patent, software", result["notice"])
+        self.assertEqual(result["matches"][0]["missing_terms"], ["patent", "software"])
+        self.assertEqual(self.store.search("hiring colleges")["missing_terms"], [])
 
     def test_republished_export_rebuilds_the_index(self):
         self.publish([self.record("a", "alpha")])
@@ -178,19 +178,19 @@ class Bm25Tests(unittest.TestCase):
         """A fake embedder that knows two synonyms stands in for the real model."""
         class Synonyms:
             def encode(self, texts):
-                rows = [[float("cheat" in t or "cheatgrass" in t), float("hay" in t), 1.0] for t in texts]
+                rows = [[float("deepfake" in t or "synthetic" in t), float("hiring" in t), 1.0] for t in texts]
                 vectors = np.array(rows, dtype=np.float32)
                 return vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
-        self.publish([self.record("brome", "cheat is a weedy brome in winter wheat"),
-                      self.record("bales", "store hay bales dry"),
-                      self.record("MF9-p1", "unrelated text", document_id="MF9")])
-        bm25 = self.store.search("cheatgrass")["matches"]
+        self.publish([self.record("synthetic", "synthetic media that imitates a real person"),
+                      self.record("screening", "screening tools used in hiring"),
+                      self.record("EO-9-p1", "unrelated text", document_id="EO-9")])
+        bm25 = self.store.search("deepfake")["matches"]
         self.assertEqual(bm25, [])
         hybrid = RecordStore(self.path, "hybrid", embedder=Synonyms())
-        match = hybrid.search("cheatgrass")["matches"][0]
-        self.assertEqual(match["id"], "brome")
+        match = hybrid.search("deepfake")["matches"][0]
+        self.assertEqual(match["id"], "synthetic")
         self.assertEqual(match["ranks"], {"bm25": None, "semantic": 1})
-        self.assertEqual(hybrid.search("MF9 hay")["matches"][0]["id"], "MF9-p1")
+        self.assertEqual(hybrid.search("EO-9 hiring")["matches"][0]["id"], "EO-9-p1")
         self.assertEqual(hybrid.status()["search_mode"], "hybrid")
 
     def test_unknown_mode_is_rejected(self):

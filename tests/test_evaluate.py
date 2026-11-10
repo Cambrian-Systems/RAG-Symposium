@@ -38,19 +38,19 @@ class EvaluateTests(unittest.TestCase):
     def test_scores_and_not_found_warnings(self):
         records = [{"id": f"{d}-p1", "title": d, "text": text, "source": "s",
                     "metadata": {"document_id": d, "pages": [1]}}
-                   for d, text in (("HAY", "hay fires start from excess moisture"),
-                                   ("WHEAT", "wheat seeding rates in kansas"))]
+                   for d, text in (("COPY", "copyright protects human authorship of works"),
+                                   ("HIRE", "hiring software audits in colleges"))]
         data = self.write("records.jsonl", records)
         questions = load_questions(self.write("q.jsonl", [
-            {"id": "q1", "question": "what causes hay fires", "expect": ["HAY"], "category": "fact"},
-            {"id": "q2", "question": "kansas wheat seeding", "expect": ["HAY"]},
-            {"id": "q3", "question": "pistachio orchards in kansas", "expect": []}]))
+            {"id": "q1", "question": "who decides copyright authorship", "expect": ["COPY"], "category": "fact"},
+            {"id": "q2", "question": "colleges hiring software", "expect": ["COPY"]},
+            {"id": "q3", "question": "drone licensing in colleges", "expect": []}]))
         result = evaluate(RecordStore(data, "bm25"), questions, k=5)
         summary = result["summary"]["all"]
         self.assertEqual(summary["hit@1"], 0.5)
         self.assertEqual(summary["hit@k"], 0.5)
         self.assertEqual((summary["unanswerable"], summary["flagged"]), (1, 1))
-        self.assertEqual(summary["false_warnings"], 1)  # q1: "causes" is in no result
+        self.assertEqual(summary["false_warnings"], 1)  # q1: "decides" is in no result
         self.assertEqual(result["summary"]["categories"]["fact"]["hit@1"], 1.0)
         keyword = evaluate(RecordStore(data, "keyword"), questions, k=5)
         self.assertEqual(keyword["summary"]["all"]["flagged"], 0)
@@ -82,7 +82,7 @@ class EvaluateTests(unittest.TestCase):
 
     def test_bad_question_files_name_the_line(self):
         for row in ({"question": "no id", "expect": []}, {"id": "x", "question": "q"},
-                    {"id": "x", "question": "q", "expect": "MF991"},
+                    {"id": "x", "question": "q", "expect": "OMB-M-24-10"},
                     {"id": "x", "question": "q", "expect": [], "pages": ["3"]}):
             with self.subTest(row=row), self.assertRaisesRegex(ValueError, "line 2"):
                 load_questions(self.write("bad.jsonl", [{"id": "ok", "question": "q", "expect": []}, row]))
