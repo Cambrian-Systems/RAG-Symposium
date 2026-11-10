@@ -197,5 +197,99 @@ class Bm25Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "search mode"):
             RecordStore(self.path, "semantic")
 
+
+class DocumentIdTests(unittest.TestCase):
+    """IDs and aliases written the way people write them still find their document."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.path = Path(folder.name) / "records.jsonl"
+        # A document that cites the others many times, so only ID matching
+        # (not word counts) can put the named document first.
+        citing = "see M-24-10, EO 14110 and NIST AI 600-1. " * 5
+        records = [self.page("MEMO-p1", "MEMO", [], citing)]
+        for doc_id, aliases, texts in (
+                ("M-24-10", ["OMB M-24-10"], ["agency use of automated tools"]),
+                ("EO-14110", ["EO 14110", "Executive Order 14110"], ["an order on automated tools"]),
+                ("NIST-AI-600-1", ["NIST AI 600-1"],
+                 ["a profile for automated tools", "content provenance and labeling"])):
+            records += [self.page(f"{doc_id}-p{n}", doc_id, aliases, text)
+                        for n, text in enumerate(texts, 1)]
+        self.path.write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
+        self.store = RecordStore(self.path, "bm25")
+
+    @staticmethod
+    def page(id, document_id, aliases, text):
+        return dict(id=id, title="Test record", text=text, source="test-source",
+                    metadata={"document_id": document_id, "aliases": aliases})
+
+    def top(self, query, store=None):
+        match = (store or self.store).search(query)["matches"][0]
+        return match["metadata"]["document_id"], match["id_match"]
+
+    def test_ids_and_aliases_match_however_they_are_written(self):
+        for query, document in (("M-24-10", "M-24-10"), ("omb m-24-10", "M-24-10"),
+                                ("m 24 10", "M-24-10"), ("M2410", "M-24-10"),
+                                ("EO 14110", "EO-14110"), ("eo-14110", "EO-14110"),
+                                ("Executive Order 14110", "EO-14110"),
+                                ("NIST AI 600-1", "NIST-AI-600-1")):
+            with self.subTest(query=query):
+                self.assertEqual(self.top(query), (document, True))
+
+    def test_id_in_a_question_picks_the_page_about_the_rest(self):
+        result = self.store.search("what does NIST AI 600-1 say about provenance")
+        self.assertEqual(result["matches"][0]["id"], "NIST-AI-600-1-p2")
+        self.assertEqual([m["id_match"] for m in result["matches"][:2]], [True, True])
+        # The ID's own numbers are not reported as words the results lack.
+        self.assertEqual(result["missing_terms"], [])
+        self.assertNotIn("600", result["matches"][1]["missing_terms"])
+
+    def test_ids_match_only_on_whole_words(self):
+        """14110 inside a longer number, or a prefix of an ID, is not the ID."""
+        for query in ("EO 141105", "EO 214110", "M-24-1", "NIST AI 600"):
+            with self.subTest(query=query):
+                matches = self.store.search(query)["matches"]
+                self.assertTrue(matches)
+                self.assertFalse(any(m["id_match"] for m in matches))
+
+    def test_hybrid_puts_aliases_first_too(self):
+        class Flat:
+            def encode(self, texts):
+                return np.ones((len(texts), 2), dtype=np.float32) / np.sqrt(2)
+        hybrid = RecordStore(self.path, "hybrid", embedder=Flat())
+        self.assertEqual(self.top("omb m-24-10 automated tools", hybrid), ("M-24-10", True))
+
+
+class DocumentStatusTests(unittest.TestCase):
+    """A rescinded or superseded document says so next to its title."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.path = Path(folder.name) / "records.jsonl"
+        records = [
+            dict(id="OLD-p1", title="Old guidance", text="guidance on automated tools", source="s",
+                 metadata={"document_id": "OLD", "published": "Oct 2023", "revised": "",
+                           "status": "rescinded", "replaced_by": ["NEW"]}),
+            dict(id="NEW-p1", title="New guidance", text="guidance on automated tools", source="s",
+                 metadata={"document_id": "NEW", "published": "Apr 2025", "revised": "May 2025",
+                           "status": "in force", "replaced_by": []}),
+            dict(id="PLAIN", title="No status", text="guidance on automated tools", source="s")]
+        self.path.write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
+
+    def test_search_and_read_show_document_status(self):
+        expected = {"OLD-p1": "rescinded; published Oct 2023; replaced by NEW",
+                    "NEW-p1": "in force; revised May 2025"}
+        for mode in ("keyword", "bm25"):
+            store = RecordStore(self.path, mode)
+            with self.subTest(mode=mode):
+                matches = {m["id"]: m for m in store.search("guidance")["matches"]}
+                self.assertEqual({k: m.get("document_status") for k, m in matches.items()},
+                                 {**expected, "PLAIN": None})
+        store = RecordStore(self.path)
+        self.assertEqual(store.get("OLD-p1")["document_status"], expected["OLD-p1"])
+        self.assertNotIn("document_status", store.get("PLAIN"))
+
 if __name__ == "__main__":
     unittest.main()

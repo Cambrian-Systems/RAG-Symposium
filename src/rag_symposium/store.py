@@ -8,8 +8,8 @@ retrieval can replace this adapter while preserving the tools in server.py.
 Two search modes share the same records and citations:
 - keyword: counts distinct query words in each record. Simple and easy to fool.
 - bm25: weighs rare words above common ones, boosts titles, and puts records
-  whose publication ID is in the query first. It also reports query words no
-  result contains, so a client can notice when the evidence isn't there.
+  whose document ID or alias is in the query first. It also reports query words
+  no result contains, so a client can notice when the evidence isn't there.
 - hybrid: bm25 plus embedding similarity (see embeddings.py), so a question
   can find a record that uses different words for the same thing.
 """
@@ -24,16 +24,16 @@ import numpy as np
 SEARCH_MODES = ("keyword", "bm25", "hybrid")
 
 # Words too common to say anything about a record, plus instructions such as
-# "summarize". BM25 leaves them out of scoring: in a corpus of bulletins,
-# "my" and "I" are rare, so without this list the one publication of farmer
-# interviews outranks pages that actually mention the query's subject.
+# "summarize". BM25 leaves them out of scoring: in a corpus of formal documents,
+# "my" and "I" are rare, so without this list the one document written in the
+# first person outranks pages that actually mention the query's subject.
 STOPWORDS = frozenset("""
 a about after all also am an and any are as at be been before being between both
 but by can could did do does doing during each for from had has have how i if in
 into is it its me more most my no not of on or other our should so some such than
 that the their them then there these they this those to too under up very was we
 were what when where which while who whom why will with would you your
-describe explain list summarize tell
+describe explain list say says summarize tell
 """.split())
 
 # Standard BM25 constants: K1 limits how much repeating a word helps, B scales
@@ -42,6 +42,8 @@ K1, B, TITLE_WEIGHT = 1.2, 0.75, 0.5
 # Hybrid search fuses each method's top CANDIDATES. RRF_K = 60 is the usual
 # constant; it keeps one method's first place from swamping the other's list.
 CANDIDATES, RRF_K = 50, 60
+# The longest document ID or alias, in words, that a query can match.
+MAX_ID_WORDS = 12
 
 
 def tokens(text: str) -> list[str]:
@@ -49,11 +51,36 @@ def tokens(text: str) -> list[str]:
     return re.findall(r"\w+", text.casefold())
 
 
+def id_key(name: str) -> str:
+    """Reduce a document ID or alias to letters and digits: "M-24-10" -> "m2410".
+
+    People write the same ID many ways (M-24-10, m 24 10, M‑24‑10 with a
+    non-breaking hyphen), so IDs are compared with case, spaces and
+    punctuation removed.
+    """
+    return "".join(re.findall(r"[^\W_]+", name.casefold()))
+
+
+def id_spans(query: str) -> dict[str, list[str]]:
+    """Every run of consecutive query words, joined as id_key would join them.
+
+    Returns joined run -> the words in it. "omb m-24-10" gives "omb", "ombm",
+    "m2410", "2410", "10" and so on. Runs start and end on whole words, so the
+    alias "EO 14110" matches "eo 14110" and "EO-14110" but not "EO 141105".
+    """
+    words = re.findall(r"[^\W_]+", query.casefold())
+    spans = {}
+    for start in range(len(words)):
+        for end in range(start + 1, min(len(words), start + MAX_ID_WORDS) + 1):
+            spans.setdefault("".join(words[start:end]), words[start:end])
+    return spans
+
+
 def stem(word: str) -> str:
-    """Fold simple English plurals together: fungicides -> fungicide, varieties -> variety.
+    """Fold simple English plurals together: regulations -> regulation, agencies -> agency.
 
     This is the Harman "S" stemmer, the lightest common stemmer. It leaves
-    other endings (rated vs ratings, seeding vs seed) for semantic search.
+    other endings (rated vs ratings, governing vs govern) for semantic search.
     """
     if len(word) <= 3 or not word.isalpha():
         return word
@@ -64,6 +91,25 @@ def stem(word: str) -> str:
     if word.endswith("s") and not word.endswith(("us", "ss")):
         return word[:-1]
     return word
+
+
+def status_line(metadata: dict) -> str:
+    """Summarize a document's standing in one line, or "" if it has no status.
+
+    "rescinded; published Oct 2023; replaced by EO 14179" tells an agent, in
+    the search result itself, not to present a rescinded rule as current.
+    """
+    status = metadata.get("status")
+    if not isinstance(status, str) or not status.strip():
+        return ""
+    parts = [status]
+    if metadata.get("revised"):
+        parts.append(f"revised {metadata['revised']}")
+    elif metadata.get("published"):
+        parts.append(f"published {metadata['published']}")
+    if isinstance(metadata.get("replaced_by"), list) and metadata["replaced_by"]:
+        parts.append("replaced by " + ", ".join(map(str, metadata["replaced_by"])))
+    return "; ".join(parts)
 
 
 class RecordStore:
@@ -134,9 +180,17 @@ class RecordStore:
 
     @staticmethod
     def reference(record):
-        """Keep search and read responses consistent about identity and provenance."""
-        return {"id": record["id"], "title": record["title"], "source": record["source"],
-                "citation": f"[{record['id']}]"}
+        """Keep search and read responses consistent about identity and provenance.
+
+        document_status sits next to the title so it is hard to miss; the full
+        status_note stays in metadata.
+        """
+        reference = {"id": record["id"], "title": record["title"], "source": record["source"],
+                     "citation": f"[{record['id']}]"}
+        status = status_line(record.get("metadata", {}))
+        if status:
+            reference["document_status"] = status
+        return reference
 
     def search(self, query: str, limit: int = 5) -> dict:
         """Check the request, then rank records with the configured search mode."""
@@ -150,7 +204,7 @@ class RecordStore:
         if not terms:
             raise ValueError("query must contain a word or number")
         if self.mode == "bm25":
-            return self.search_bm25(terms, limit)
+            return self.search_bm25(query, terms, limit)
         if self.mode == "hybrid":
             return self.search_hybrid(query, terms, limit)
         return self.search_keyword(terms, limit)
@@ -201,9 +255,12 @@ class RecordStore:
         entries = []
         for record in records:
             metadata = record.get("metadata", {})
-            ids = {record["id"].casefold()}
-            if isinstance(metadata.get("document_id"), str):
-                ids.add(metadata["document_id"].casefold())
+            # Names a query can use to mean this record's document: its own ID,
+            # its document's ID, and any aliases ("EO 14110"), compared by id_key.
+            names = [record["id"], metadata.get("document_id")]
+            if isinstance(metadata.get("aliases"), list):
+                names += metadata["aliases"]
+            ids = {id_key(n) for n in names if isinstance(n, str)} - {""}
             entries.append({"record": record, "text": Counter(map(stem, tokens(record["text"]))),
                             "title": Counter(map(stem, tokens(record["title"]))), "ids": ids})
         index = {"entries": entries}
@@ -231,11 +288,12 @@ class RecordStore:
             score += idf * tf * (K1 + 1) / (tf + K1 * norm)
         return score
 
-    def rank_bm25(self, terms: set[str]) -> tuple[list, dict, set]:
+    def rank_bm25(self, query: str, terms: set[str]) -> tuple[list, dict, set, set]:
         """Score every record containing a meaningful query word.
 
-        Returns (ranked entries, stem -> word as typed, meaningful stems).
-        Each ranked entry is (id_match, score, index entry, stems present).
+        Returns (ranked entries, stem -> word as typed, meaningful stems, stems
+        that were part of a matched document ID). Each ranked entry is
+        (id_match, score, index entry, stems present).
         """
         index = self.index()
         entries, total = index["entries"], len(index["entries"])
@@ -245,29 +303,37 @@ class RecordStore:
             typed.setdefault(stem(term), term)
         stems = set(typed)
         content = {t for t in stems if typed[t] not in STOPWORDS} or stems
-        ranked = []
+        spans = id_spans(query)
+        ranked, matched_ids = [], set()
         for entry in entries:
             present = self.present(entry, stems)
-            # Someone who types a publication ID means that publication, not
+            # Someone who types a document ID or alias means that document, not
             # every page that cites it. ID matches sort ahead of everything else.
-            id_match = bool(terms & entry["ids"])
+            hits = {key for key in entry["ids"] if key in spans}
+            matched_ids |= hits
+            id_match = bool(hits)
             if not id_match and not present & content:
                 continue
             score = (self.bm25(entry["text"], content, index["text"], total)
                      + TITLE_WEIGHT * self.bm25(entry["title"], content, index["title"], total))
             ranked.append((id_match, score, entry, present))
         ranked.sort(key=lambda item: (-item[0], -item[1], item[2]["record"]["id"]))
-        return ranked, typed, content
+        # "600" and "1" in "NIST AI 600-1" named a document; a page that never
+        # spells them out is not missing anything the query asked about.
+        id_words = {stem(word) for key in matched_ids for word in spans[key]}
+        return ranked, typed, content, id_words
 
     @staticmethod
     def present(entry: dict, stems: set[str]) -> set[str]:
         return {t for t in stems if t in entry["text"] or t in entry["title"]}
 
     def results(self, picked: list[tuple[dict, dict]], typed: dict, content: set, mode: str,
-                notice: str) -> dict:
+                notice: str, id_words: set = frozenset()) -> dict:
         """Shape ranked (index entry, extra fields) pairs into a search response,
-        with the words each result and the whole response lack."""
+        with the words each result and the whole response lack. Words that were
+        part of a matched document ID are never reported as missing."""
         matches, covered = [], set()
+        reported = content - id_words
         for entry, extra in picked:
             present = self.present(entry, set(typed))
             covered |= present
@@ -277,10 +343,10 @@ class RecordStore:
             words = {w for w in set(tokens(record["title"] + " " + record["text"]))
                      if stem(w) in (present & content or present)}
             matches.append(self.match(record, words, **extra,
-                                      missing_terms=sorted(typed[t] for t in content - present)))
+                                      missing_terms=sorted(typed[t] for t in reported - present)))
         index = self.index()
-        missing = sorted(typed[t] for t in content - covered)
-        unknown = sorted(typed[t] for t in content
+        missing = sorted(typed[t] for t in reported - covered)
+        unknown = sorted(typed[t] for t in reported
                          if not index["text"]["df"][t] and not index["title"]["df"][t])
         if missing:
             notice += (f" No result contains: {', '.join(missing)}. The answer may not be "
@@ -288,19 +354,19 @@ class RecordStore:
         return {"matches": matches, "search_mode": mode, "missing_terms": missing,
                 "unknown_terms": unknown, "notice": notice}
 
-    def search_bm25(self, terms: set[str], limit: int) -> dict:
-        """Rank by BM25 over text and title, with exact publication IDs first.
+    def search_bm25(self, query: str, terms: set[str], limit: int) -> dict:
+        """Rank by BM25 over text and title, with exact document IDs and aliases first.
 
         Results also say which meaningful query words they lack. A word that no
         result contains is a sign the answer may not be in the data at all.
         """
-        ranked, typed, content = self.rank_bm25(terms)
+        ranked, typed, content, id_words = self.rank_bm25(query, terms)
         picked = [(entry, {"score": round(score, 3), "id_match": id_match})
                   for id_match, score, entry, _ in ranked[:limit]]
         return self.results(picked, typed, content, "bm25", (
             "BM25: rare words count more than common ones; titles are boosted; "
-            "exact publication IDs rank first. Scores compare results for this query only. "
-            "Read records before citing claims."))
+            "exact document IDs and aliases rank first. Scores compare results for this "
+            "query only. Read records before citing claims."), id_words)
 
     def vectors(self, index: dict):
         """Embed every record once per export version and keep the vectors with the index."""
@@ -315,9 +381,9 @@ class RecordStore:
         Each method ranks the records on its own. A record's fused score is the
         sum of 1 / (60 + rank) over the methods that ranked it in their top
         CANDIDATES, so something both methods like rises, and something only
-        one finds can still make the list. Exact publication IDs stay first.
+        one finds can still make the list. Exact document IDs and aliases stay first.
         """
-        ranked, typed, content = self.rank_bm25(terms)
+        ranked, typed, content, id_words = self.rank_bm25(query, terms)
         index = self.index()
         vectors = self.vectors(index)
         entries = {e["record"]["id"]: e for e in index["entries"]}
@@ -339,8 +405,8 @@ class RecordStore:
                   for key in order[:limit]]
         return self.results(picked, typed, content, "hybrid", (
             "Hybrid: BM25 keyword ranking fused with embedding similarity. Each result's "
-            "ranks show which method found it. Exact publication IDs rank first. "
-            "Read records before citing claims."))
+            "ranks show which method found it. Exact document IDs and aliases rank first. "
+            "Read records before citing claims."), id_words)
 
     @staticmethod
     def excerpt_start(text: str, matched: set[str]) -> int:

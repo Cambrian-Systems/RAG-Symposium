@@ -2,7 +2,7 @@
 
 An embedding model maps a piece of text to a list of numbers (a vector).
 Texts about similar things get vectors pointing in similar directions, so
-"cheat" and "downy brome" can land near each other even though they share no
+"rescinded" and "revoked" can land near each other even though they share no
 words. Records and questions must go through the same model; vectors from two
 different models can't be compared.
 

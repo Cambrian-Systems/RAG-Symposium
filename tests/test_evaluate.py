@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from rag_symposium.evaluate import evaluate, load_questions, rank_of
+from rag_symposium.evaluate import evaluate, load_questions, rank_of, report
 from rag_symposium.store import RecordStore
 
 
@@ -24,11 +24,13 @@ class EvaluateTests(unittest.TestCase):
         path.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
         return path
 
-    def test_rank_by_publication_pages_and_all(self):
+    def test_rank_by_document_pages_and_all(self):
         results = [match("A"), match("B", (3,)), match("C")]
         self.assertEqual(rank_of(results, {"expect": ["B"]}), 2)
-        self.assertEqual(rank_of(results, {"expect": ["B"], "pages": [3, 4]}), 2)
-        self.assertIsNone(rank_of(results, {"expect": ["B"], "pages": [9]}))
+        self.assertEqual(rank_of(results, {"expect": ["B"], "pages": [3, 4]}, by_page=True), 2)
+        self.assertIsNone(rank_of(results, {"expect": ["B"], "pages": [9]}, by_page=True))
+        # Document-level ranks ignore pages: the right document on the wrong page counts.
+        self.assertEqual(rank_of(results, {"expect": ["B"], "pages": [9]}), 2)
         self.assertEqual(rank_of(results, {"expect": ["C", "A"]}), 1)
         self.assertEqual(rank_of(results, {"expect": ["C", "A"], "all": True}), 3)
         self.assertIsNone(rank_of(results, {"expect": ["A", "Z"], "all": True}))
@@ -52,6 +54,31 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(result["summary"]["categories"]["fact"]["hit@1"], 1.0)
         keyword = evaluate(RecordStore(data, "keyword"), questions, k=5)
         self.assertEqual(keyword["summary"]["all"]["flagged"], 0)
+
+    def test_page_level_scores_sit_next_to_document_scores(self):
+        """A right document on the wrong page is a document hit and a page miss."""
+        records = [{"id": f"DOC-p{n}", "title": "Doc", "text": text, "source": "s",
+                    "metadata": {"document_id": "DOC", "pages": [n]}}
+                   for n, text in ((1, "overview of record keeping"), (2, "record keeping rules"),
+                                   (3, "retention periods of records"))]
+        data = self.write("records.jsonl", records)
+        questions = load_questions(self.write("q.jsonl", [
+            {"id": "q1", "question": "overview of record keeping", "expect": ["DOC"], "pages": [1]},
+            {"id": "q2", "question": "overview of record keeping", "expect": ["DOC"], "pages": [3]},
+            {"id": "q3", "question": "retention periods", "expect": ["DOC"]}]))
+        for mode in ("keyword", "bm25"):
+            with self.subTest(mode=mode):
+                result = evaluate(RecordStore(data, mode), questions, k=5)
+                summary = result["summary"]["all"]
+                self.assertEqual((summary["hit@1"], summary["hit@k"]), (1.0, 1.0))
+                self.assertEqual(summary["with_pages"], 2)
+                self.assertEqual((summary["page_hit@1"], summary["page_hit@k"]), (0.5, 1.0))
+                rows = {row["id"]: row for row in result["questions"]}
+                self.assertEqual((rows["q2"]["rank"], rows["q2"]["page_rank"]), (1, 3))
+                self.assertNotIn("page_rank", rows["q3"])
+                text = report([result], "misses")
+                self.assertIn("rank 1, page 3", text)
+                self.assertIn("2 of them naming pages", text)
 
     def test_bad_question_files_name_the_line(self):
         for row in ({"question": "no id", "expect": []}, {"id": "x", "question": "q"},

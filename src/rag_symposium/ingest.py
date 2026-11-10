@@ -88,6 +88,22 @@ def records_for(header: dict, pages: list[tuple[int, str]], mode: str,
     else:
         pieces = windows(pages, size, overlap)
         ids = [f"{doc_id}-w{i}" for i in range(len(pieces))]
+    # Every record carries its document's status, so a search result can say
+    # "rescinded" or "superseded" without reading the header separately.
+    # Optional header fields default to empty, so older documents still ingest.
+    shared = {
+        "document_id": doc_id,
+        "aliases": header.get("aliases", []),
+        "issuer": header.get("issuer", ""),
+        "published": header.get("published", ""),
+        "revised": header.get("revised", ""),
+        "status": header.get("status", ""),
+        "status_note": header.get("status_note", ""),
+        "replaces": header.get("replaces", []),
+        "replaced_by": header.get("replaced_by", []),
+        "topics": header.get("topics", []),
+        "credit": header.get("credit", ""),
+    }
     records = []
     for index, (record_id, (text, spanned)) in enumerate(zip(ids, pieces)):
         if not text.strip():
@@ -97,15 +113,7 @@ def records_for(header: dict, pages: list[tuple[int, str]], mode: str,
             "title": header["title"],
             "text": text,
             "source": header["source_url"],
-            "metadata": {
-                "document_id": doc_id,
-                "pages": spanned,
-                "chunk_index": index,
-                "published": header.get("published", ""),
-                "revised": header.get("revised", ""),
-                "topics": header.get("topics", []),
-                "credit": header.get("credit", ""),
-            },
+            "metadata": {**shared, "pages": spanned, "chunk_index": index},
         })
     return records
 
