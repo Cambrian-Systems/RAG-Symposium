@@ -18,6 +18,8 @@ rag-ingest = "rag_symposium.ingest:main"
 rag-eval = "rag_symposium.evaluate:main"
 # Makes `uv run rag-search "question"` print one query's results in each mode.
 rag-search = "rag_symposium.search:main"
+# Makes `uv run rag-check` print PASS/FAIL for the export, model and searches.
+rag-check = "rag_symposium.check:main"
 
 [build-system]
 # Hatchling packages the source so command-line entry points/imports work.
