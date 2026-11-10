@@ -9,15 +9,21 @@ different models can't be compared.
 The default model, potion-base-8M, is a static embedding model: it looks up a
 vector for each word piece and averages them, with no neural network running
 at search time. It is about 30 MB and embeds thousands of pages in under a
-second on a laptop CPU. It is downloaded from Hugging Face on first use, or
-loaded from a local folder named in RAG_EMBED_MODEL.
+second on a laptop CPU. A copy ships in this repo under models/, so hybrid
+search works with no download; RAG_EMBED_MODEL or --embed-model can name another
+local folder or a Hugging Face model instead.
 """
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 
-DEFAULT_MODEL = "minishlab/potion-base-8M"
+HUB_MODEL = "minishlab/potion-base-8M"
+# The copy in the repo: src/rag_symposium/embeddings.py -> repo root -> models/.
+BUNDLED_MODEL = Path(__file__).resolve().parents[2] / "models" / "potion-base-8M"
+# Use the bundled copy when it is there; otherwise fall back to downloading it.
+DEFAULT_MODEL = str(BUNDLED_MODEL) if (BUNDLED_MODEL / "model.safetensors").exists() else HUB_MODEL
 
 
 class Embedder:
