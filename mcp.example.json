@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "rag-symposium": {
+    "rag": {
       "command": "/absolute/path/to/uv",
       "args": [
         "run",

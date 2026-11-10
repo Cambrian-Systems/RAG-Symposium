@@ -70,42 +70,41 @@ Use `http://127.0.0.1:8765/mcp` in a compatible MCP client. Keep the command
 running; Ctrl+C stops it. This is a protocol endpoint, not a chat webpage.
 Before ingestion, `data_status` should report zero records.
 
-## Workshop setup with OpenCode
+## Workshop setup: one prompt
 
-The workshop uses [OpenCode](https://opencode.ai), a free, open-source agent
-that can run commands, edit files and call this repo's search tools.
-[opencode.jsonc](opencode.jsonc) in this folder tells it how to start the
-search server, and turns its web tools off so answers come from the documents
-here. [WORKSHOP.md](WORKSHOP.md) has every prompt used in the session, in
-order, ready to copy.
+Any AI agent that can run commands on your laptop can set this project up and
+then use its search tools: Codex, Claude Code, Cursor, Copilot in VS Code,
+Gemini CLI, OpenCode and others. Send it:
 
-1. Install the OpenCode desktop app from <https://opencode.ai/desktop>.
-2. Download this folder (**Code › Download ZIP**), unzip it and open it in
-   OpenCode.
-3. Connect a model: type `/connect`, then `/models`. Sign in with ChatGPT
-   Plus or Pro (choose **OpenAI**) or GitHub Copilot (the free plan works), or
-   paste your own API key. In the workshop, anyone without one of those pastes
-   the workshop key (choose **OpenCode**, then the model **GLM-5.3-Flash**).
-   OpenCode also has free models that need no account, but their usage limit
-   is too low to rely on.
-4. Paste: `If uv is not installed on this computer, install it for this user only, following https://docs.astral.sh/uv/ . Then run uv sync --locked, then uv run rag-ingest, then uv run rag-check, and tell me whether every line says PASS.`
-5. Start a new session and ask: `What tools do you have, and is the data loaded?`
-   It should call `rag_data_status` and report 1,847 records.
+```text
+Set up https://github.com/Cambrian-Systems/RAG-Symposium on this computer by following the SETUP.md file in it. Tell me when it's done and what to do next.
+```
 
-The tools are the same whichever model you connect: OpenCode supplies the ones
-for reading files and running commands, and this folder supplies the three
-`rag_` search tools. Models differ in how well they use them, which is what
-the evaluation step measures.
+[SETUP.md](SETUP.md) is what the agent follows: get the folder, install uv if
+it is missing, install the project, load the documents, run `rag-check`, and
+connect the search server to itself. [WORKSHOP.md](WORKSHOP.md) has every
+prompt used in the session, in order, ready to copy.
 
-If the answer does not name the three `rag_` tools, OpenCode could not start
-the search server, usually because it cannot find `uv`. Ask it: `Find the full
-path of the uv program on this computer and put that full path in place of "uv"
-in opencode.jsonc.` Then start a new session.
+Then start a new session in this folder and ask: `What tools do you have, and
+is the data loaded?` The agent should name `data_status`, `search_documents`
+and `get_document`, and report 1,847 records.
 
-After changing `opencode.jsonc` or `src/rag_symposium/server.py`, start a new
-session so the search server restarts with the change. Tested with the OpenCode
-command-line version 2.2.7 on Linux and the model GLM-5.3-Flash (free tier);
-any other MCP-capable client can use [mcp.example.json](mcp.example.json).
+No agent yet? [OpenCode](https://opencode.ai) is free and open source, and
+[opencode.jsonc](opencode.jsonc) in this folder connects the search server and
+switches OpenCode's web tools off, so answers come from the documents here. In
+other agents the connection goes in their own MCP settings
+([mcp.example.json](mcp.example.json)), and web search stays as you have it set.
+
+If the tools are missing, the agent could not start the search server, usually
+because it cannot find `uv`. Ask it: `Find the full path of the uv program on
+this computer and put that full path in place of "uv" in the rag server
+settings.` Then start a new session.
+
+After changing the search server's settings or `src/rag_symposium/server.py`,
+start a new session so the server restarts with the change. Every workshop step
+was tested with the OpenCode command-line version 2.2.7 on Linux and the model
+GLM-5.3-Flash (free tier); the one-prompt setup through SETUP.md and other
+agents were not tested before the workshop.
 
 ## Repository map
 
@@ -236,7 +235,7 @@ client's configuration, replacing every placeholder path:
 | Configuration part | Meaning |
 | --- | --- |
 | `mcpServers` | A common client-config shape; your client may use a different format |
-| `rag-symposium` | The connection's display name in that client |
+| `rag` | The connection's display name in that client |
 | `command` | Absolute path to uv; find it with `which uv` or Windows `where uv` |
 | `run` | Ask uv to run a command in the project's environment |
 | `--directory` and the following path | Locate this repo regardless of the client's working directory |

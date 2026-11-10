@@ -1,48 +1,36 @@
 # Workshop guide
 
 Everything you type in the workshop, in order. Copy each prompt from this page
-and paste it into OpenCode. The slides show the same prompts.
+and paste it into your agent. The slides show the same prompts.
 
-You never have to write code. If OpenCode gets stuck, each step has a fallback
-you can run by hand.
+You never have to write code. If your agent gets stuck, each step has a
+fallback you can run by hand.
 
-## Set up (start as soon as you sit down)
+## Set up: one prompt (start as soon as you sit down)
 
-**1. Install OpenCode.** Download the desktop app from
-<https://opencode.ai/desktop> and install it. The installers are also on the
-USB sticks on the tables.
+Use any AI agent that can run commands on your laptop: Codex, Claude Code,
+Cursor, Copilot in VS Code, Gemini CLI, OpenCode or another. A chatbot that
+only runs in a browser tab cannot do this.
 
-**2. Get this folder.** On the GitHub page for this project, choose
-**Code › Download ZIP** and unzip it, or copy the folder from a USB stick. Then
-open the folder in OpenCode. Open the `RAG-Symposium` folder itself, not the
-folder above it.
-
-**3. Connect a model.** Type `/connect` in OpenCode. Use an account you
-already have if it is on this list; otherwise use the workshop key.
-
-| You have | Choose | Then |
-|---|---|---|
-| ChatGPT Plus or Pro | **OpenAI** | Choose **Sign in with ChatGPT**. Type `/models` and pick a model. |
-| GitHub Copilot, including Copilot Free | **GitHub Copilot** | Sign in with GitHub. Type `/models` and pick a model. |
-| Your own API key | Your provider | Paste the key. Type `/models` and pick a model. |
-| None of these | **OpenCode** | Paste the workshop key from the sheet on your table. Type `/models` and pick **GLM-5.3-Flash**. |
-
-The free ChatGPT plan, Claude Pro/Max subscriptions and Microsoft 365 Copilot
-cannot sign in to OpenCode. Use the workshop key instead.
-
-Whichever model you connect, the tools are the same: they come from OpenCode
-and from this folder, not from the model. What changes is how well the model
-uses them, and we will compare.
-
-The workshop key is switched off when the session ends.
-
-**4. Let the agent install the project.** Paste:
+Send it this:
 
 ```text
-If uv is not installed on this computer, install it for this user only, following https://docs.astral.sh/uv/ . Then run uv sync --locked, then uv run rag-ingest, then uv run rag-check, and tell me whether every line says PASS.
+Set up https://github.com/Cambrian-Systems/RAG-Symposium on this computer by following the SETUP.md file in it. Tell me when it's done and what to do next.
 ```
 
-OpenCode asks before it runs a command. Say yes.
+Say yes when it asks to run commands. It downloads this folder, installs it,
+loads 1,847 pages of documents, connects the search tools to itself, and tells
+you what to do next. [SETUP.md](SETUP.md) is what it follows.
+
+If you already have this folder (from a USB stick, say), open it in your agent
+and send `Follow SETUP.md in this folder.` instead.
+
+**No agent yet?** Install [OpenCode](https://opencode.ai/desktop), which is
+free and open source (installers are on the USB sticks). Type `/connect`,
+choose **OpenCode** and paste the workshop key from the sheet on your table,
+then type `/models` and pick **GLM-5.3-Flash**. If you pay for ChatGPT Plus or
+Pro, or have GitHub Copilot, you can choose **OpenAI** or **GitHub Copilot** in
+`/connect` instead. Then send the prompt above.
 
 Fallback, in a terminal opened in this folder (needs
 [uv](https://docs.astral.sh/uv/)):
@@ -53,6 +41,10 @@ uv run rag-ingest
 uv run rag-check
 ```
 
+Whichever agent and model you use, the search tools are the same: they come
+from this folder. What changes is how well each model uses them, and we will
+compare.
+
 ## Checkpoint 1: is your data loaded?
 
 ```text
@@ -61,7 +53,7 @@ Run rag-check and tell me whether the documents are loaded and how many records 
 
 You should see 1,847 records. Fallback: `uv run rag-check`.
 
-## Checkpoint 2: can OpenCode see the tools?
+## Checkpoint 2: can your agent see the tools?
 
 Start a **new session**, then ask:
 
@@ -69,14 +61,15 @@ Start a **new session**, then ask:
 What tools do you have, and is the data loaded?
 ```
 
-It should call `rag_data_status` and report 1,847 records in bm25 mode. Look
-for the three tools whose names start with `rag_`.
+It should call `data_status` and report 1,847 records in bm25 mode. Look for
+three tools: `data_status`, `search_documents` and `get_document`. Your agent
+may show them with a prefix such as `rag_`.
 
-If there are no `rag_` tools, OpenCode could not start the search server,
+If the tools are missing, your agent could not start the search server,
 usually because it cannot find uv. Paste this, then start a new session:
 
 ```text
-Find the full path of the uv program on this computer and put that full path in place of "uv" in opencode.jsonc.
+Find the full path of the uv program on this computer and put that full path in place of "uv" in the rag server settings (opencode.jsonc if this is OpenCode).
 ```
 
 ## Checkpoint 3: does the cited page actually say it?
@@ -96,7 +89,7 @@ the agent.
 ## Round 1: switch your search to hybrid
 
 ```text
-In opencode.jsonc, change "bm25" to "hybrid".
+Change the rag search server from "bm25" to "hybrid". It is the --search value: in opencode.jsonc if this is OpenCode, otherwise in your MCP settings.
 ```
 
 Start a new session, then ask:
@@ -105,8 +98,9 @@ Start a new session, then ask:
 Call data_status and tell me the search mode.
 ```
 
-Fallback: open `opencode.jsonc` in a text editor, change `"bm25"` to
-`"hybrid"`, save, and start a new session.
+Fallback: in OpenCode, open `opencode.jsonc` in a text editor, change
+`"bm25"` to `"hybrid"`, save, and start a new session. In another agent,
+change the same word in its MCP settings.
 
 ## Round 2: see what saved it
 
@@ -177,40 +171,13 @@ any document you care about in place of `NIST-AI-600-1`.
 Fallback: copy the format of a line in `evals/starter.jsonl` in a text editor,
 then run `uv run rag-eval`.
 
-## Using your own agent instead of OpenCode
-
-You don't have to use OpenCode. Any agent that runs on your laptop and speaks
-MCP can use the same search tools: Codex, Claude Code, Cursor, VS Code with
-Copilot, Gemini CLI and others. A chatbot that only runs in a web page cannot
-reach a server on your laptop.
-
-1. Open this folder in your agent and paste the setup prompt from step 4 above.
-2. Connect the search server. [mcp.example.json](mcp.example.json) has the
-   settings; replace the three placeholder paths with the real ones. Most
-   agents will do that for you if you ask: `Add the MCP server described in
-   mcp.example.json to your MCP settings, using the real paths on this
-   computer.` Then start a new session.
-3. Checkpoint 2 is the same question. The three tools are `data_status`,
-   `search_documents` and `get_document`; your agent may show them with a
-   different prefix than `rag_`.
-
-What differs from the OpenCode steps:
-
-- **Web search.** This folder switches OpenCode's web tools off. Your agent's
-  are probably on. Turn them off for today if you can; if not, check whether
-  each answer came from the documents or from the web.
-- **Round 1.** The search mode is the `--search` value in your agent's MCP
-  settings, not `opencode.jsonc`. Change `bm25` to `hybrid` there.
-- **New session.** After changing the MCP settings or `server.py`, restart the
-  search server in your agent, or start a new session.
-
-We tested every step in OpenCode. With another agent the steps are the same
-but the buttons are yours; compare what your agent does with your neighbour's.
-
 ## Two habits that save time
 
-- **Start a new session** after any change to `opencode.jsonc` or `server.py`.
-  The search server only restarts with a new session. Don't ask the agent to
-  reconnect.
+- **Start a new session** after any change to the search server's settings or
+  to `server.py`. The search server only restarts with a new session. Don't
+  ask the agent to reconnect.
+- **Web search.** This folder switches OpenCode's web tools off. In any other
+  agent, switch web search off for today if you can. If you can't, check
+  whether each answer came from the documents or from the web.
 - **Stuck?** Pair with a neighbour and keep following along. We will finish
   your laptop with you during the open floor.
