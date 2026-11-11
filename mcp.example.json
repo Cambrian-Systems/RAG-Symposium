@@ -10,6 +10,17 @@
         "--search", "bm25",
         "--data", "/absolute/path/to/RAG-Symposium/data/documents.jsonl"
       ]
+    },
+    "sessions": {
+      "command": "/absolute/path/to/uv",
+      "args": [
+        "run",
+        "--directory", "/absolute/path/to/RAG-Symposium",
+        "--locked",
+        "rag-symposium",
+        "--search", "bm25",
+        "--data", "/absolute/path/to/RAG-Symposium/data/sessions.jsonl"
+      ]
     }
   }
 }

@@ -4,6 +4,16 @@ This is a small search tool over 62 official U.S. documents about AI, used in
 a workshop. The person you are helping may not program. Do what they ask
 yourself, keep explanations short, and show command output as printed.
 
+## Answering questions
+
+For any question about AI rules, policies or guidance, call `search_documents`
+first, read what it returns (use `get_document` for more of a page), and answer
+only from that, citing the record ID. Do not answer from memory or the web. If
+the documents do not contain the answer, say so plainly. Questions about the
+person's own AI sessions go to the `sessions` search tools in the same way. If
+you have no search tools, say so and tell the person to start a new session
+from this folder.
+
 Where things are:
 
 - **Setup:** follow [SETUP.md](SETUP.md).
@@ -32,7 +42,10 @@ Where things are:
   `sessions/docs/` and publishes `data/sessions.jsonl`, with likely secrets
   redacted. `--mode summary` writes one short page per session. Search it with
   `uv run rag-search "question" --data data/sessions.jsonl --mode bm25`, or
-  through the `sessions` server in `opencode.jsonc`. Show its report unchanged.
+  through the `sessions` search server (in `opencode.jsonc`, or in the agent's
+  own MCP settings; see `mcp.example.json`). Show its report unchanged. If it
+  finds no sessions, say so plainly and suggest a chatbot export or pairing
+  with a neighbour. After it runs, tell the person to start a new session.
 
 After any change to the server's settings or to `server.py`, tell the person
 to start a new session: the running server does not pick up changes, and it

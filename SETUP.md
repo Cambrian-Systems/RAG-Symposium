@@ -62,18 +62,23 @@ The server is a local MCP server that the agent launches itself. Do not start
 it in the background and do not run it as an HTTP service.
 
 **OpenCode:** nothing to add. `opencode.jsonc` in this folder connects it when
-the folder is opened. If OpenCode cannot find `uv`, replace `"uv"` in
-`opencode.jsonc` with the full path from step 2.
+the folder is opened. If OpenCode cannot find `uv`, replace every `"uv"` in
+`opencode.jsonc` (there are two) with the full path from step 2.
 
 **Any other agent (Codex, Claude Code, Cursor, VS Code, Gemini CLI and so
-on):** add a local stdio MCP server named `rag` to your own MCP settings, in
-whatever way your app documents. [mcp.example.json](mcp.example.json) shows the
-shape. Use full paths, not relative ones:
+on):** add two local stdio MCP servers, `rag` and `sessions`, to your own MCP
+settings for this folder, in whatever way your app documents (for Claude Code,
+`claude mcp add` with project scope, or a `.mcp.json` in this folder).
+[mcp.example.json](mcp.example.json) shows the shape. Use full paths, not
+relative ones:
 
 - command: the full path of `uv`
-- arguments: `run`, `--directory`, the full path of this folder, `--locked`,
-  `rag-symposium`, `--search`, `bm25`, `--data`, the full path of
+- arguments for `rag`: `run`, `--directory`, the full path of this folder,
+  `--locked`, `rag-symposium`, `--search`, `bm25`, `--data`, the full path of
   `data/documents.jsonl` in this folder
+- arguments for `sessions`: the same, except the last one is the full path of
+  `data/sessions.jsonl`. That file does not exist yet; it is created later in
+  the workshop, and the server reports 0 records until then.
 
 Each argument is a separate item. Do not join them into one string.
 
@@ -95,7 +100,9 @@ Finish with a short message that says:
    session**, so the search tools load.
 4. To ask in that new session: `What tools do you have, and is the data loaded?`
    The answer should name three tools, `data_status`, `search_documents` and
-   `get_document`, and report 1,847 records in bm25 mode.
+   `get_document` (often with a prefix such as `rag_` or `mcp__rag__`), and
+   report 1,847 records in bm25 mode. The same three tools for `sessions` show
+   0 records; they are for later in the workshop.
 5. That `WORKSHOP.md` in the folder has every prompt for the rest of the
    session.
 

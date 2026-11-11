@@ -19,8 +19,8 @@ Set up https://github.com/Cambrian-Systems/RAG-Symposium on this computer by fol
 ```
 
 Say yes when it asks to run commands. It downloads this folder, installs it,
-loads 1,847 pages of documents, connects the search tools to itself, and tells
-you what to do next. [SETUP.md](SETUP.md) is what it follows.
+loads 1,847 pages of documents, adds the search tools to its settings, and
+tells you to start a new session so they load. [SETUP.md](SETUP.md) is what it follows.
 
 If you already have this folder (from a USB stick, say), open it in your agent
 and send `Follow SETUP.md in this folder.` instead.
@@ -65,7 +65,8 @@ What tools do you have, and is the data loaded?
 
 It should call `data_status` and report 1,847 records in bm25 mode. Look for
 three tools: `data_status`, `search_documents` and `get_document`. Your agent
-may show them with a prefix such as `rag_`.
+may show them with a prefix such as `rag_`. You may also see the same three for
+`sessions`, with 0 records: those are for part two.
 
 If the tools are missing, your agent could not start the search server,
 usually because it cannot find uv. Paste this, then start a new session:
@@ -124,8 +125,11 @@ Turn my AI sessions on this laptop into a searchable collection.
 Your agent runs `uv run rag-sessions`. It finds the sessions your AI agents
 saved on this laptop (Claude Code, Codex, OpenCode, Gemini CLI), replaces
 anything that looks like a password or key with `[REDACTED]`, writes one
-document per session and loads them for search. Nothing leaves your laptop.
-Everyone has at least today's setup session. Then start a new session and ask:
+document per session and loads them into the `sessions` search tools. Nothing
+leaves your laptop. If you use one of those agents, you have at least today's
+setup session. If it finds none (Cursor and Copilot keep their history
+somewhere else), pair with a neighbour or load a chatbot export (below).
+Then start a new session, so the `sessions` tools see the new data, and ask:
 
 ```text
 What went wrong during setup today, and how did we fix it?
@@ -189,7 +193,7 @@ Fallback: put one text file per document in `corpus/docs/` with a short header
 (see "Using your own documents" in [README.md](README.md)), then run
 `uv run rag-ingest`.
 
-## Two habits that save time
+## Three habits that save time
 
 - **Start a new session** after any change to the search server's settings or
   to `server.py`. The search server only restarts with a new session. Don't
