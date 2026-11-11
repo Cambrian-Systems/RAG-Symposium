@@ -11,7 +11,8 @@ or current statement of the law: documents published, revoked or changed after
 
 This folder is source material, not an ingestion export. `uv run rag-ingest`
 reads `docs/` and publishes records for the server to `data/documents.jsonl`
-(see [Ingestion](../README.md#ingestion)).
+(see [Ingestion](../README.md#ingestion)). Each document is one file,
+`docs/<ID>.md`.
 
 ## What is in it
 
@@ -35,13 +36,6 @@ newest documents, such as `ED-FR-2026-22615`, use different words than older
 ones. Second, many documents are no longer in force. A revoked order or a
 rescinded memo reads just as confidently as a current one; only its `status`
 says otherwise.
-
-| Path | What it holds |
-| --- | --- |
-| `docs/<ID>.md` | One document per file, named by its ID |
-| `sources.jsonl` | The curated source list: one official document per line, with its download URL and status evidence |
-| `manifest.jsonl` | One line per document in the snapshot: pages, characters, SHA-256 of the downloaded file, fetch date |
-| `fetch_sources.py` | The facilitator script that builds `docs/` and `manifest.jsonl` from `sources.jsonl` |
 
 ## Document header
 
@@ -81,8 +75,8 @@ Status is never guessed.
 - **Executive orders:** read from the Federal Register's own disposition notes
   (for EO 14110, "Revoked by: EO 14148, January 20, 2025") when the snapshot
   was taken, 2026-11-10. The notes are copied into `status_evidence`.
-- **Everything else:** set in `sources.jsonl` from a sentence in an official
-  document, quoted in `status_evidence` with its URL. For example, OMB M-25-21
+- **Everything else:** set from a sentence in an official document, quoted in
+  `status_evidence` with its URL. For example, OMB M-25-21
   says "This memorandum rescinds and replaces ... M-24-10", so M-24-10 is
   `rescinded` and `replaced_by` lists `OMB-M-25-21`.
 - **`unknown`:** no official sentence establishing the status was found.
@@ -120,47 +114,11 @@ document's `credit` line with any excerpt anyway, so readers can find the
 original. Some documents quote or reproduce third-party material, which may
 have its own rights.
 
-## Regenerate
-
-Facilitators only. Attendees use the committed snapshot and never download
-anything during the workshop.
-
-```sh
-uv run corpus/fetch_sources.py                              # every source in sources.jsonl
-uv run corpus/fetch_sources.py --only EO-14110 OMB-M-24-10  # just these IDs
-uv run corpus/fetch_sources.py --check                      # report what would change, write nothing
-```
-
-The script declares its own dependency (`pypdf`) inline, so it does not change
-the project's requirements. Downloads are cached in `corpus/.cache/`, which Git
-ignores. A full run rewrites `manifest.jsonl` and removes documents no longer in
-`sources.jsonl`, so `docs/` matches the list. Executive order statuses are
-re-read from the Federal Register on every run, so a later run can produce a
-different snapshot.
-
-To add a document, add one line to `sources.jsonl` with at least `id`, `title`,
-`issuer`, `published` and `url` (the PDF, or the web page with
-`"format": "html"`). Add `aliases`, `topics` and `landing_url` (the official
-page, if `url` is a direct file or archive copy). For an executive order, add
-`fr_document_number` and the script fills in status from the Federal Register.
-For anything else, set `status`, `status_note` and `status_evidence` (a quoted
-official sentence and its URL), or leave `status` out to record `unknown`. Then
-run `uv run corpus/fetch_sources.py --only <ID>`, check the new
-`docs/<ID>.md`, run a full fetch to refresh the manifest, then
-`uv run rag-ingest` and `uv run rag-eval`.
-
 ## All documents
 
-Grouped by issuer as each header names it, then by date. Generated from
-`manifest.jsonl`; to refresh it after a fetch, run the snippet in the comment
-below from the repo root and paste its output over the table.
+Grouped by issuer as each header names it, then by date.
 
-<!--
-uv run python -c "
-import json
-rows = [json.loads(line) for line in open('corpus/manifest.jsonl', encoding='utf-8') if line.strip()]
-rows.sort(key=lambda r: (r['issuer'].casefold(), r['published'] or '9999', r['id']))
-print('| Issuer | ID | Title | Date | Status |\n| --- | --- | --- | --- | --- |')
+| Issuer | ID | Title | Date | Status |\n| --- | --- | --- | --- | --- |')
 for i, r in enumerate(rows):
     issuer = r['issuer'] if i == 0 or rows[i - 1]['issuer'] != r['issuer'] else ''
     print(f\"| {issuer} | \`{r['id']}\` | {r['title'].replace('|', '/')} | {r['published'] or '—'} | {r['status']} |\")

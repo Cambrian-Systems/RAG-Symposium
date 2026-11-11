@@ -1,288 +1,98 @@
 # RAG-Symposium
 
-A small local MCP server that gives a compatible chatbot read-only access to
-text ingested on an attendee's computer.
-
-**Current scope:** the MCP connection, a generic record adapter, the workshop
-corpus in [corpus/](corpus/README.md) (62 official U.S. AI rules and guidance
-documents, 1,847 pages), ingestion that chunks it into the server's export,
-three search modes (a naive keyword baseline, BM25, and hybrid BM25 +
-embeddings), `rag-eval` for scoring them, and `rag-check` for confirming a
-laptop is ready. No chatbot or model provider has been selected; any
-MCP-capable client can connect.
+A small search tool that an AI agent on your laptop can use to answer questions
+from documents and cite the page. It comes with 62 official U.S. AI rules and
+guidance documents (1,847 pages, in [corpus/](corpus/README.md)), three search
+modes to compare, a way to score them, and a converter that makes your own AI
+sessions searchable the same way. Everything runs locally; no account or API
+key is needed for the search itself.
 
 The corpus is a teaching snapshot taken 2026-11-10. It is not legal advice and
 not a complete or current statement of the law.
 
-## Start here
+## Set up: one prompt
 
-Install Python 3.12 (the package supports 3.11–3.13) and
-[uv](https://docs.astral.sh/uv/). From the repo root:
-
-```sh
-uv sync --locked
-uv run rag-symposium --help
-uv run python tests/mcp_smoke.py
-uv run python tests/http_smoke.py
-```
-
-The last two commands start real MCP servers, check them, and shut them down.
-They use temporary artificial records and need no API key, chatbot account,
-model download or data in the repo. A `PASS` line means the connection check
-succeeded; it does not establish a particular chatbot's answer quality.
-
-Then publish the workshop corpus for the server to read:
-
-```sh
-uv run rag-ingest
-```
-
-This writes `data/documents.jsonl`, one record per page, and prints
-`Published 1847 records from 62 documents (page mode) to data/documents.jsonl`.
-See [Ingestion](#ingestion) for the other chunking modes.
-
-Then check the laptop is ready:
-
-```sh
-uv run rag-check
-```
-
-`rag-check` works offline and prints one line per step. All four should say
-`PASS`, like this:
-
-```text
-PASS  export: data/documents.jsonl has 1847 records
-PASS  embedding model: /path/to/RAG-Symposium/models/potion-base-8M loads offline (256 dimensions)
-PASS  keyword search: 5 results for 'Generative Artificial Intelligence: Overview, Issu', first CRS-IF12426-p1
-PASS  hybrid search: 5 results for 'Generative Artificial Intelligence: Overview, Issu', first CRS-R47644-p3
-```
-
-A `FAIL` line says what to run next. These commands are the same in macOS
-Terminal and Windows PowerShell.
-
-To leave a local HTTP endpoint running:
-
-```sh
-uv run python start-local.py
-```
-
-Use `http://127.0.0.1:8765/mcp` in a compatible MCP client. Keep the command
-running; Ctrl+C stops it. This is a protocol endpoint, not a chat webpage.
-Before ingestion, `data_status` should report zero records.
-
-## Workshop setup: one prompt
-
-Any AI agent that can run commands on your laptop can set this project up and
-then use its search tools: Codex, Claude Code, Cursor, Copilot in VS Code,
-Gemini CLI, OpenCode and others. Send it:
+Any AI agent that can run commands on your laptop can set this up and then use
+it: Codex, Claude Code, Cursor, Copilot in VS Code, Gemini CLI, OpenCode and
+others. Send it:
 
 ```text
 Set up https://github.com/Cambrian-Systems/RAG-Symposium on this computer by following the SETUP.md file in it. Tell me when it's done and what to do next.
 ```
 
-[SETUP.md](SETUP.md) is what the agent follows: get the folder, install uv if
-it is missing, install the project, load the documents, run `rag-check`, and
-connect the search server to itself. [WORKSHOP.md](WORKSHOP.md) has every
-prompt used in the session, in order, ready to copy.
-
-Then start a new session in this folder and ask: `What tools do you have, and
-is the data loaded?` The agent should name `data_status`, `search_documents`
-and `get_document`, and report 1,847 records.
+[SETUP.md](SETUP.md) is what the agent follows. [WORKSHOP.md](WORKSHOP.md) has
+every prompt used in the workshop, in order, ready to copy.
 
 No agent yet? [OpenCode](https://opencode.ai) is free and open source, and
-[opencode.jsonc](opencode.jsonc) in this folder connects the search server and
-switches OpenCode's web tools off, so answers come from the documents here. In
-other agents the connection goes in their own MCP settings
-([mcp.example.json](mcp.example.json)), and web search stays as you have it set.
+[opencode.jsonc](opencode.jsonc) in this folder connects the search tools and
+switches OpenCode's web tools off. Other agents keep the connection in their
+own settings; [mcp.example.json](mcp.example.json) shows the shape.
 
-If the tools are missing, the agent could not start the search server, usually
-because it cannot find `uv`. Ask it: `Find the full path of the uv program on
-this computer and put that full path in place of "uv" in the rag server
-settings.` Then start a new session.
+By hand, with [uv](https://docs.astral.sh/uv/) installed:
 
-After changing the search server's settings or `src/rag_symposium/server.py`,
-start a new session so the server restarts with the change. Every workshop step
-was tested with the OpenCode command-line version 2.2.7 on Linux and the model
-GLM-5.3-Flash (free tier); the one-prompt setup through SETUP.md and other
-agents were not tested before the workshop.
+```sh
+uv sync --locked
+uv run rag-ingest
+uv run rag-check
+```
 
-## Repository map
+`rag-ingest` prints `Published 1847 records from 62 documents (page mode) to
+data/documents.jsonl`. `rag-check` works offline and should print four lines
+that start with `PASS`; a `FAIL` line says what to run next.
 
-| File | What to learn from it |
+## What's in this folder
+
+| Path | What it is |
 | --- | --- |
-| [start-local.py](start-local.py) | A short launcher that forwards options to the existing server in HTTP mode |
-| [src/rag_symposium/server.py](src/rag_symposium/server.py) | Tool registration, descriptions, command-line options, and the two connection modes |
-| [src/rag_symposium/store.py](src/rag_symposium/store.py) | Reading/validating records, the three search modes, ID and alias matching, `document_status`, citations and paginated reads |
-| [src/rag_symposium/ingest.py](src/rag_symposium/ingest.py) | Reading corpus documents, chunking them into records, and publishing the export |
-| [src/rag_symposium/embeddings.py](src/rag_symposium/embeddings.py) | Loading the small embedding model hybrid search uses |
-| [src/rag_symposium/search.py](src/rag_symposium/search.py) | `rag-search`: one query's results in each mode, from the command line |
-| [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | Scoring search modes against questions with known answers |
-| [src/rag_symposium/check.py](src/rag_symposium/check.py) | `rag-check`: PASS/FAIL for the export, the offline embedding model and both searches |
-| [src/rag_symposium/sessions.py](src/rag_symposium/sessions.py) | `rag-sessions`: your own AI-agent sessions as documents, with secrets redacted, published to `data/sessions.jsonl` |
-| [evals/starter.jsonl](evals/starter.jsonl) | Starter questions with the documents (and pages) that answer them |
-| [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
-| [mcp.example.json](mcp.example.json) | An example client configuration for launching the server over stdio |
-| [SETUP.md](SETUP.md) | The setup steps an AI agent follows from the one-prompt setup |
-| [AGENTS.md](AGENTS.md) | A short map for AI agents: where the search mode, tool description, test questions and documents live (`CLAUDE.md` and `GEMINI.md` point to it) |
 | [WORKSHOP.md](WORKSHOP.md) | Every prompt used in the workshop, in order |
-| [pyproject.toml](pyproject.toml) | Project requirements, packaging, and the `rag-symposium` command entry point |
-| [uv.lock](uv.lock) | Generated exact dependency versions and download hashes; let uv manage it |
-| [.gitignore](.gitignore) | Keeps installed dependencies, generated files and local ingestion data off Git |
-| [.gitattributes](.gitattributes) | Keeps LF line endings on every OS so character offsets match across laptops |
-| [corpus/README.md](corpus/README.md) | The workshop documents: 62 official U.S. AI rules and guidance documents as text, with status, evidence and snapshot details |
-| [corpus/sources.jsonl](corpus/sources.jsonl) | The curated source list: one official document per line, with its status evidence |
-| [corpus/fetch_sources.py](corpus/fetch_sources.py) | The facilitator script that builds `corpus/docs/` and `corpus/manifest.jsonl` from that list |
-| [data/README.md](data/README.md) | Where the ingestion export lives; it is generated locally, never committed |
-| [tests/test_store.py](tests/test_store.py) | Fast examples of adapter behavior and invalid inputs |
-| [tests/test_ingest.py](tests/test_ingest.py) | Chunking modes, page provenance, safe publishing, and a check that the real corpus ingests |
-| [tests/test_server.py](tests/test_server.py) | Which port/origin options are accepted or rejected |
-| [tests/test_evaluate.py](tests/test_evaluate.py) | How `rag-eval` counts a hit, a miss, a page miss and a not-found warning |
-| [tests/test_check.py](tests/test_check.py) | Which `rag-check` lines pass or fail with a missing export or model |
-| [tests/test_search.py](tests/test_search.py) | That `rag-search` prints each result's date and status |
-| [tests/test_sessions.py](tests/test_sessions.py) | Each session format `rag-sessions` reads, redaction, summary mode and a full run, on made-up sessions in `tests/fixtures/sessions/` |
-| [tests/mcp_smoke.py](tests/mcp_smoke.py) | A small MCP client that starts and calls the real stdio server |
-| [tests/http_smoke.py](tests/http_smoke.py) | Real HTTP calls, browser-origin checks, and server cleanup |
-
-`.venv/` is created by uv on your machine and is not source code. Ignore it when
-exploring. The lockfile is generated rather than manually commented or edited.
-JSON does not allow comments, so the configuration example is explained below.
+| [SETUP.md](SETUP.md) | The setup steps an AI agent follows |
+| [AGENTS.md](AGENTS.md) | A short map for AI agents working in this folder (`CLAUDE.md` and `GEMINI.md` point to it) |
+| [opencode.jsonc](opencode.jsonc), [mcp.example.json](mcp.example.json) | How an agent connects to the search server: OpenCode's settings, and an example for other agents |
+| [corpus/](corpus/README.md) | The 62 documents, one text file each in `corpus/docs/` |
+| [evals/starter.jsonl](evals/starter.jsonl) | Test questions with the documents (and pages) that answer them |
+| [models/](models/potion-base-8M) | The small embedding model hybrid search uses, so nothing is downloaded |
+| `data/` | Where the search exports are written on your laptop; never committed |
+| [src/rag_symposium/server.py](src/rag_symposium/server.py) | The MCP server: the three tools an agent sees, and their descriptions |
+| [src/rag_symposium/store.py](src/rag_symposium/store.py) | The three search modes, citations and reading a record |
+| [src/rag_symposium/ingest.py](src/rag_symposium/ingest.py) | `rag-ingest`: chunks the documents into records |
+| [src/rag_symposium/embeddings.py](src/rag_symposium/embeddings.py) | Loads the embedding model for hybrid search |
+| [src/rag_symposium/search.py](src/rag_symposium/search.py) | `rag-search`: one question's results, from the command line |
+| [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | `rag-eval`: scores the search modes against the test questions |
+| [src/rag_symposium/check.py](src/rag_symposium/check.py) | `rag-check`: PASS/FAIL for the export, the model and the searches |
+| [src/rag_symposium/sessions.py](src/rag_symposium/sessions.py) | `rag-sessions`: your own AI sessions as searchable documents |
+| `tests/` | Unit tests and a check that starts the real server: `uv run python -m unittest discover -s tests` and `uv run python tests/mcp_smoke.py` |
 
 ## How the pieces work together
 
 ```mermaid
 flowchart LR
-    K[corpus/docs] --> I[ingest.py]
-    I --> D[Local JSONL export]
-    C[Chatbot / MCP client] <-->|Tool calls and evidence| S[server.py]
-    S <-->|Python methods and results| R[store.py]
+    K[corpus/docs] --> I[rag-ingest]
+    I --> D[data/documents.jsonl]
+    C[Your AI agent] <-->|Tool calls and evidence| S[server.py]
+    S <--> R[store.py]
     R -->|Read only| D
 ```
 
-- **Ingestion** splits the corpus text into records and keeps each one's source,
-  pages and dates. It runs once, before the server is used, not on each question.
-- **The store** reads the prepared text, finds matching records and retains sources.
-- **MCP** describes callable tools and carries requests/results between the client
-  and this server. It does not generate answers or create embeddings.
-- **The chatbot** chooses when to call tools and writes its answer using the result.
-  Its model and account are configured in that chatbot, outside this server.
-
-The same tool functions are available through both connection modes. Changing
-transport does not change the records, search logic or citations.
-
-### Trace one question through the code
-
-1. The client connects and discovers tools. In `create_server()`, `@server.tool`
-   registers a Python function; its type hints describe inputs and its docstring
-   helps the chatbot understand when to call it.
-2. The chatbot calls `data_status()`. `RecordStore.status()` reads/validates the
-   configured export and reports its availability and record count.
-3. The chatbot calls `search_documents(query, limit)`. `RecordStore.search()`
-   matches whole words in titles/text and returns IDs, sources and excerpts.
-4. The chatbot calls `get_document(document_id, ...)` to read supporting context.
-   The ID is looked up inside the export; it is never treated as a file to open.
-5. The result returns over MCP. The chatbot can cite the returned `[record-id]`
-   and source reference when writing its answer.
-
-A citation label identifies a record; it does not prove a claim is supported.
-Tool descriptions and server instructions guide the chatbot, but do not guarantee
-that it will call tools or use evidence correctly. Inspect the returned text.
-
-### Suggested reading order
-
-Start with `start-local.py`, then read `create_server()` in `server.py` to see the
-three tool wrappers. Follow those wrappers into `store.py`: `records()` →
-`search()` → `get()`. Return to `server.main()` to see startup and transport
-selection. Finally, read the tests as runnable examples of expected behavior.
-
-## Connection modes
-
-### HTTP: start a local port yourself
-
-```sh
-uv run python start-local.py --port 8766 --data /absolute/path/documents.jsonl
-```
-
-The helper locates this repo, asks uv to run the installed command, and forwards
-its remaining arguments. For the default port, the equivalent command is:
-
-```sh
-uv run --locked rag-symposium --transport http
-```
-
-If a browser client sends requests directly from a different web origin, allow
-that specific origin (scheme, hostname and optional port):
-
-```sh
-uv run python start-local.py --allow-origin https://client.example
-```
-
-Replace the example with the actual client's origin, without a page path.
-The option is repeatable. It enables CORS response headers for that origin and
-permits it in the MCP request-origin check. The code comments explain why these
-are separate checks. Wildcard origins are not accepted.
-
-This does not add MCP support to arbitrary websites or bypass browser local-network
-permissions. A chatbot that makes calls from its provider's cloud servers cannot
-reach your computer's localhost. That case needs a separately designed authenticated
-tunnel or hosted endpoint. The current listener binds to `127.0.0.1` and has no
-user authentication; it is intended only for local use, not public exposure.
-See the [MCP HTTP transport specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/transports/streamable-http.mdx).
-
-### Stdio: let the chatbot launch the process
-
-In this mode the MCP client launches/stops the server and uses its standard
-input/output streams. No port or separate terminal is needed. Stdio is the
-`rag-symposium` command's default mode.
-
-Copy the settings from [mcp.example.json](mcp.example.json) into a compatible
-client's configuration, replacing every placeholder path:
-
-| Configuration part | Meaning |
-| --- | --- |
-| `mcpServers` | A common client-config shape; your client may use a different format |
-| `rag` | The connection's display name in that client |
-| `command` | Absolute path to uv; find it with `which uv` or Windows `where uv` |
-| `run` | Ask uv to run a command in the project's environment |
-| `--directory` and the following path | Locate this repo regardless of the client's working directory |
-| `--locked` | Use the dependency lockfile; fail rather than silently resolve changed requirements |
-| `rag-symposium` in `args` | Run the entry point defined in `pyproject.toml` |
-| `--search` and `bm25` | Pick the search mode; change it to `hybrid` or `keyword` to compare |
-| `--data` and the following path | Select the ingestion export; use an absolute path |
-
-`args` is an array: each option/path is a separate element, including paths with
-spaces. Do not paste one shell command into that array. Reconnect after changing
-client settings, then confirm the three tools appear.
-
-## Tools and options
+- **Ingestion** splits the documents into records and keeps each one's source,
+  pages, dates and status. It runs once, not on each question.
+- **The server** offers three read-only tools over MCP. It does not generate
+  answers.
+- **Your agent** decides when to call the tools and writes the answer from what
+  they return. Its model and account are set in the agent, not here.
 
 | Tool | Inputs | What it returns |
 | --- | --- | --- |
-| `data_status` | None | Configured file, existence, record count and search mode |
-| `search_documents` | `query`; optional `limit` (default 5, maximum 10) | Source-linked excerpts up to 600 characters each, `document_status`, metadata, matching terms, and read offsets |
-| `get_document` | `document_id`; optional `offset` and `max_chars` | Source, `document_status`, metadata and a text slice; `next_offset` identifies the next unread character |
+| `data_status` | None | The data file, record count and search mode |
+| `search_documents` | `query`; optional `limit` (default 5, maximum 10) | Excerpts up to 600 characters each, with record ID, source, `document_status` and metadata |
+| `get_document` | `document_id`; optional `offset` and `max_chars` | More of one record's text (4,000 characters by default); follow `next_offset` to keep reading |
 
-`document_status` sits next to each result's title and sums up the document's
-standing in one line, such as `revoked; published 2023-10-30; replaced by EO-14148`
-for Executive Order 14110, or `rescinded; published 2024-03-28; replaced by
-OMB-M-25-21` for OMB memo M-24-10. The server's instructions ask the chatbot to
-state it when citing and to prefer documents in force. A record with no status
-has no `document_status`.
+`document_status` sums up a document's standing in one line, such as `revoked;
+published 2023-10-30; replaced by EO-14148` for Executive Order 14110. The
+server asks the agent to state it when citing and to prefer documents in force.
 
-`get_document` defaults to 4,000 characters per call, with a maximum of 10,000.
-Start at offset 0 to read from the beginning. Follow `next_offset` until it is
-`null`, or stop when you have enough context. Offsets count characters, not tokens.
-
-| Launch option | Default / effect |
-| --- | --- |
-| `--transport stdio` or `--transport http` | Default `stdio`; the helper selects `http` |
-| `--search keyword`, `bm25` or `hybrid` | Default `keyword`, or `RAG_SEARCH_MODE`; see [Search modes](#search-modes) |
-| `--embed-model NAME_OR_FOLDER` | Hybrid only. Default: the bundled `models/potion-base-8M`, or `RAG_EMBED_MODEL` |
-| `--data PATH` | Overrides `RAG_DATA_PATH`, otherwise uses `data/documents.jsonl` relative to the server's working directory |
-| `--port NUMBER` | HTTP port, default 8765 |
-| `--allow-origin ORIGIN` | HTTP-only, repeatable; allows a specific browser origin |
-
-The helper and example client config set the working directory to this repo.
-If you invoke the installed server from elsewhere, supply an absolute `--data` path.
+A citation identifies a record; it does not prove the claim. Tool descriptions
+guide the agent but do not guarantee it searches or reads carefully. Open the
+cited page and check.
 
 ## Ingestion
 
@@ -310,48 +120,19 @@ Blank pages are skipped. Chunking changes what search can return: a page can
 split a table from its heading, a window can split a sentence, and a whole
 document buries one paragraph in dozens of pages.
 
-Ingestion validates every record against the data contract below before
-publishing, so a bad corpus fails here and the previous export stays in place.
-
-## Data contract
-
-The adapter expects JSONL: one complete JSON object per line. No source-format
-or dataset choice is implied. This illustrative shape is not a bundled export:
-
-```json
-{"id":"record-id","title":"Descriptive title","text":"Extracted source text.","source":"original-source-reference","metadata":{}}
-```
-
-| Field | Required | Meaning |
-| --- | --- | --- |
-| `id` | Yes | Unique stable ID, 1–200 letters/numbers/underscores/dots/dashes |
-| `title` | Yes | Nonempty display title |
-| `text` | Yes | Nonempty extracted text |
-| `source` | Yes | Nonempty reference to the original, such as a URL or filename |
-| `metadata` | No | JSON object of ingestion-supplied attributes, returned by search and reads |
-
-An adapter can emit a record per document or passage. The server treats each as
-an addressable record and returns its source string without following it.
-
-A missing export is normal before ingestion. An existing empty file also has
-zero records; `data_available` distinguishes those cases. Every call rereads the
-file, so a newly published export is visible without restarting the process.
-Publish a complete temporary export and rename it over the old file to avoid
-readers seeing a half-written update. Malformed JSON, missing fields and duplicate
-IDs produce explicit tool errors; there is no last-good-export cache.
-
-The adapter reads small exports into memory; it is not designed for large indexes.
-Future retrieval can replace `RecordStore` while keeping the
-tool names.
+Each record is one JSON line with `id`, `title`, `text`, `source` and
+`metadata`. Ingestion validates every record before publishing, so a bad
+document fails here and the previous export stays in place.
 
 ## Search modes
 
-All three modes search the same records and return the same citations. Pick one when
-the server starts (`--search bm25`), then reconnect the client.
+All three modes search the same records and return the same citations. The server
+picks one when it starts (`--search bm25` in its settings); after changing it,
+start a new session.
 
 | Mode | How it ranks | What fools it |
 | --- | --- | --- |
-| `keyword` (default) | Counts distinct query words in the title and text. Every word counts the same, and ID breaks ties. It deliberately does not recognize document IDs | Common words (*the, for, in*) count as much as *deepfake*; pages of a report that cites `M-24-10` outrank the memo itself |
+| `keyword` | Counts distinct query words in the title and text. Every word counts the same, and ID breaks ties. It deliberately does not recognize document IDs | Common words (*the, for, in*) count as much as *deepfake*; pages of a report that cites `M-24-10` outrank the memo itself |
 | `bm25` | Rare words count more than common ones, long records don't win by size, title matches get a boost, and records whose document ID or alias is in the query come first. Simple plurals match (*deepfakes* finds *deepfake*) | Different words for the same thing (*AI* vs *SI* or *Super Intelligence*), tables, and anything that needs meaning rather than matching words |
 | `hybrid` | BM25 and embedding similarity each rank the records; reciprocal rank fusion combines the two lists. Document IDs and aliases still come first | Tables, old documents that match well (a revoked order reads like a current one), and anything the embedding model wasn't trained to understand |
 
@@ -495,7 +276,8 @@ uv run rag-ingest --corpus my-docs --output my-docs.jsonl
 uv run rag-eval --data my-docs.jsonl --questions my-questions.jsonl
 ```
 
-Start the server with `--data` pointing at the same export (use an absolute path).
+To search it from your agent, point the server's `--data` setting at that export
+(use an absolute path) and start a new session.
 To replace the workshop corpus instead, put the files in `corpus/docs/`, run
 `uv run rag-ingest`, then `uv run rag-eval --questions my-questions.jsonl`.
 
@@ -538,53 +320,16 @@ why summary is the default; compare the same question with `--mode raw`.
 [opencode.jsonc](opencode.jsonc) also starts a second server, `sessions`, that
 serves `data/sessions.jsonl` with `bm25` search.
 
-## Verify and explore
-
-```sh
-uv run rag-check
-uv run python -m unittest discover -s tests -v
-uv run python tests/mcp_smoke.py
-uv run python tests/mcp_smoke.py --search bm25
-uv run python tests/mcp_smoke.py --search hybrid
-uv run python tests/http_smoke.py
-```
-
-`rag-check` confirms this laptop's export, offline model and searches. The unit
-tests check Python behavior without network connections. The smoke checks
-start real servers and act as MCP clients; they verify discovery, tool calls,
-empty startup, source references and bounded reads. The HTTP check also verifies
-CORS and Host/Origin restrictions. All test data is temporary and cleaned up.
-
-For self-guided exploration:
-
-- Change a tool's docstring in `server.py`, restart/reconnect, and inspect its
-  discovered description. In stdio mode, reconnecting restarts the server.
-- Change the keyword query in a test to a synonym and observe that keyword search
-  may miss it. That is a starting point for the later semantic-retrieval discussion.
-- Lower `max_chars` in a smoke check and watch it follow more read offsets.
-- Inspect an invalid-export test to see why broken input becomes a visible error.
-
-These are optional local experiments; reset any test expectations you change.
-The tests do not run a language model or prove a chatbot's claims are supported.
-
 ## Troubleshooting
 
-| Symptom | Where to look |
+| Symptom | What to do |
 | --- | --- |
-| `uv` not found | Install uv and check the absolute executable path in the client config |
-| Zero records | Call `data_status`; check the selected export path and run `uv run rag-ingest` |
-| `rag-check` fails on the embedding model | While online, run `uv run rag-search "test" --mode hybrid` once, then rerun `uv run rag-check` |
-| Invalid data on a particular line | Validate that JSONL record against the data contract above |
-| No keyword matches | Try words actually present in the title/text (newer documents say *SI*, older ones *AI*), or start the server with `--search hybrid` |
-| Port already in use | Stop the other listener or choose another `--port` and update the client URL |
-| Browser request rejected | Check the exact allowed origin and the browser client's own local-network permissions |
-| Client cannot connect from the cloud | A local listener is not publicly reachable; this needs a different connection setup |
-| Stdio connection fails | Confirm the command/paths; stdout must contain only MCP messages, with logs on stderr |
+| The agent has no search tools | It could not start the server, usually because it cannot find `uv`. Put the full path of `uv` in the server's settings, then start a new session |
+| A settings or `server.py` change has no effect | Start a new session; the server only restarts then |
+| Zero records | Run `uv run rag-ingest`, then `uv run rag-check` |
+| `rag-check` fails on the embedding model | Check that `models/potion-base-8M` has its four files; download the folder again if not |
+| No matches for a question | Try words that appear in the documents (newer ones say *SI*, older ones *AI*), or switch the server to `--search hybrid` |
 
-The SDK is constrained to its tested v1 API (`mcp<2`); exact versions live in
-`uv.lock`. Edit requirements in `pyproject.toml` and regenerate with `uv lock`
-when intentionally changing dependencies. See the [v1 SDK documentation](https://py.sdk.modelcontextprotocol.io/v1/).
-
-All tools read local data only. A cloud-backed chatbot may send retrieved text
-to its model provider even though the server/data are local. Review that client's
-settings when choosing what data to ingest.
+All tools read local data only. Your agent still sends your question, and every
+passage search returns, to whoever runs its model. Keep that in mind when you
+choose what to load.

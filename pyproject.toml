@@ -5,7 +5,6 @@ version = "0.1.0"
 description = "A small local MCP server for ingested data"
 requires-python = ">=3.11,<3.14"
 # Keep the tested v1 SDK API. uv.lock pins its exact resolved dependencies.
-# The SDK also supplies the HTTP server/client libraries used by this project.
 # model2vec runs the small static embedding model for hybrid search (CPU only).
 dependencies = ["mcp>=1.30,<2", "model2vec>=0.10,<0.11"]
 

@@ -11,9 +11,5 @@ __pycache__/
 # Share folder instructions, never an attendee's ingestion export.
 data/*
 !data/README.md
-# Documents rag-sessions writes from an attendee's own AI sessions stay local.
+# Documents and transcripts rag-sessions writes from your own AI sessions stay local.
 /sessions/
-# Source PDFs are re-downloadable; the committed corpus is their extracted text.
-corpus/.cache/
-# Built distribution archives are recreated from source when needed.
-dist/
