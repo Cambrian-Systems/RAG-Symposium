@@ -7,9 +7,6 @@ modes to compare, a way to score them, and a converter that makes your own AI
 sessions searchable the same way. Everything runs locally; no account or API
 key is needed for the search itself.
 
-The corpus is a teaching snapshot taken 2026-11-10. It is not legal advice and
-not a complete or current statement of the law.
-
 ## Set up: one prompt
 
 Any AI agent that can run commands on your laptop can set this up and then use

@@ -1,10 +1,7 @@
 # Workshop guide
 
-Everything you type in the workshop, in order. Copy each prompt from this page
+Everything you type in the workshop. Copy each prompt from this page
 and paste it into your agent. The slides show the same prompts.
-
-You never have to write code. If your agent gets stuck, each step has a
-fallback you can run by hand.
 
 ## Set up: one prompt (start as soon as you sit down)
 
@@ -27,8 +24,8 @@ and send `Follow SETUP.md in this folder.` instead.
 
 **No agent yet?** Install [OpenCode](https://opencode.ai/desktop), which is
 free and open source (installers are on the USB sticks). Type `/connect`,
-choose **OpenCode** and paste the workshop key from the sheet on your table,
-then type `/models` and pick **GLM-5.3-Flash**. If you pay for ChatGPT Plus or
+choose **OpenCode** then we will provide an API key `/models` and pick **GLM-5.3-Flash**. 
+If you pay for ChatGPT Plus or
 Pro, or have GitHub Copilot, you can choose **OpenAI** or **GitHub Copilot** in
 `/connect` instead. Then send the prompt above.
 
@@ -130,13 +127,8 @@ short summary per session, keeps each full transcript beside it in
 tools. Nothing leaves your laptop. If you use one of those agents, you have at least today's
 setup session. If it finds none (Cursor and Copilot keep their history
 somewhere else), pair with a neighbour or load a chatbot export (below).
-Then start a new session, so the `sessions` tools see the new data, and ask:
-
-```text
-What went wrong during setup today, and how did we fix it?
-```
-
-Then ask your own: a decision you made, a prompt you wish you'd kept,
+Then start a new session, so the `sessions` tools see the new data, Then ask something
+about your own work history: a decision you made, a prompt you wish you'd kept,
 something from last month.
 
 A summary finds the session. For the details, ask your agent to open the full
@@ -188,5 +180,3 @@ Fallback: put one text file per document in `corpus/docs/` with a short header
 - **Web search.** This folder switches OpenCode's web tools off. Other agents
   probably have web search on, so check whether each answer came from the
   documents or from the web.
-- **Stuck?** Pair with a neighbour and keep following along. We will finish
-  your laptop with you during the hands-on time.
