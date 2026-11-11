@@ -59,7 +59,7 @@ print(json.dumps({"count": len(records), "example_id": record["id"], "source": r
     print(f"1. DATA LOADED: verified {data['count']} records; example {data['example_id']}")
     print("2. TOOLS CONNECTED: pending actual chatbot connection; local protocol checks passed")
     print("3. ANSWER SUPPORTED: pending a real chatbot tool call and source check")
-    print("Next: follow presentation/AGENT_SETUP.md to connect your selected MCP client.")
+    print("Next: follow the Setup section in README.md to connect your selected MCP client.")
     print("The temporary test servers have stopped. A client/server connection must be started separately.")
 
 

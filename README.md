@@ -7,43 +7,283 @@ modes to compare, a way to score them, and a converter that makes your own AI
 sessions searchable the same way. Everything runs locally; no account or API
 key is needed for the search itself.
 
-## Set up: one prompt
+## Start here
 
-Any AI agent that can run commands on your laptop can set this up and then use
-it: Codex, Claude Code, Cursor, Copilot in VS Code, Gemini CLI, OpenCode and
-others. Send it:
+Send this to an AI agent that can run commands on your laptop:
 
 ```text
-Set up https://github.com/Cambrian-Systems/RAG-Symposium on this computer by following the SETUP.md file in it. Tell me when it's done and what to do next.
+Set up https://github.com/Cambrian-Systems/RAG-Symposium on this computer by following the Setup section in README.md. Tell me when it's done and what to do next.
 ```
 
-[SETUP.md](SETUP.md) is what the agent follows. [WORKSHOP.md](WORKSHOP.md) has
-every prompt used in the workshop, in order, ready to copy.
+If you already have this folder, open it in your agent and send
+`Follow the Setup section in README.md.`
 
-No agent yet? [OpenCode](https://opencode.ai) is free and open source, and
-[opencode.jsonc](opencode.jsonc) in this folder connects the search tools and
-switches OpenCode's web tools off. Other agents keep the connection in their
-own settings; [mcp.example.json](mcp.example.json) shows the shape.
+- [Setup](#setup): install the project and connect the search tools.
+- [Workshop](#workshop): prompts and exercises to follow together.
+- [Reference](#reference): commands, search modes, and project files.
+- [Troubleshooting](#troubleshooting): common problems and fixes.
 
-By hand, with [uv](https://docs.astral.sh/uv/) installed:
+Use a local agent such as Codex, Claude Code, Cursor, Copilot in VS Code,
+Gemini CLI, or OpenCode. A chatbot that only runs in a browser tab cannot
+perform this setup.
 
-```sh
+**No agent yet?** Install [OpenCode](https://opencode.ai/desktop) (installers
+are also on the USB sticks). Type `/connect`, choose **OpenCode**, and enter
+the API key provided at the workshop. Then type `/models` and pick
+**GLM-5.3-Flash**. If you have ChatGPT Plus or Pro, or GitHub Copilot, you can
+choose **OpenAI** or **GitHub Copilot** in `/connect` instead.
+
+## Setup
+
+For the setup agent: run these steps in order, keep explanations short, and
+show the exact error if a step fails. Do not edit `src/` or `corpus/` during
+setup.
+
+### 1. Get the folder
+
+Skip this if you are already inside a folder that contains this file and
+`pyproject.toml`.
+
+```bash
+git clone https://github.com/Cambrian-Systems/RAG-Symposium
+```
+
+If git is not installed, download
+<https://github.com/Cambrian-Systems/RAG-Symposium/archive/refs/heads/main.zip>,
+unzip it and rename the folder to `RAG-Symposium`. Put it somewhere the person
+can find again, such as their Documents folder. Work inside that folder from
+here on, and note its full path.
+
+### 2. Make sure uv is installed
+
+Run `uv --version`. If it is missing, install it for this user only, with no
+administrator rights:
+
+```bash
+# macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+```powershell
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+A shell that was already open may not see it yet. Find the full path of the
+`uv` program (often `~/.local/bin/uv`, or `%USERPROFILE%\.local\bin\uv.exe` on
+Windows) and use that full path from here on.
+
+### 3. Install the project and load the documents
+
+```bash
 uv sync --locked
 uv run rag-ingest
 uv run rag-check
 ```
 
-`rag-ingest` prints `Published 1847 records from 62 documents (page mode) to
-data/documents.jsonl`. `rag-check` works offline and should print four lines
-that start with `PASS`; a `FAIL` line says what to run next.
+`rag-ingest` should publish 1,847 records from 62 documents. `rag-check` should
+print four lines that start with `PASS`. Nothing here needs a download beyond
+the Python packages: the embedding model is in the `models/` folder.
+
+### 4. Connect the search server to the agent the person will use
+
+The server is a local MCP server that the agent launches itself. Do not start
+it in the background and do not run it as an HTTP service.
+
+**OpenCode:** nothing to add. `opencode.jsonc` in this folder connects it when
+the folder is opened. If OpenCode cannot find `uv`, replace every `"uv"` in
+`opencode.jsonc` (there are two) with the full path from step 2.
+
+**Any other agent (Codex, Claude Code, Cursor, VS Code, Gemini CLI and so
+on):** add two local stdio MCP servers, `rag` and `sessions`, to your own MCP
+settings for this folder, in whatever way your app documents (for Claude Code,
+`claude mcp add` with project scope, or a `.mcp.json` in this folder).
+[mcp.example.json](mcp.example.json) shows the shape. Use full paths, not
+relative ones:
+
+- command: the full path of `uv`
+- arguments for `rag`: `run`, `--directory`, the full path of this folder,
+  `--locked`, `rag-symposium`, `--search`, `bm25`, `--data`, the full path of
+  `data/documents.jsonl` in this folder
+- arguments for `sessions`: the same, except the last one is the full path of
+  `data/sessions.jsonl`. That file does not exist yet; it is created later in
+  the workshop, and the server reports 0 records until then.
+
+Each argument is a separate item. Do not join them into one string.
+
+### 5. Say whether web search is on
+
+In the workshop, answers should come from the documents in this folder.
+`opencode.jsonc` switches OpenCode's web tools off. In any other agent, tell
+the person whether you have web search or web browsing available, and how to
+switch it off for this project if that is possible. Do not change their global
+settings without asking.
+
+### 6. Tell the person what to do next
+
+Finish with a short message that says:
+
+1. Whether every `rag-check` line said PASS, and the record count.
+2. Where the folder is.
+3. To open the `RAG-Symposium` folder in their agent and start a **new
+   session**, so the search tools load.
+4. To ask in that new session: `What tools do you have, and is the data loaded?`
+   The answer should name three tools, `data_status`, `search_documents` and
+   `get_document` (often with a prefix such as `rag_` or `mcp__rag__`), and
+   report 1,847 records in bm25 mode. The same three tools for `sessions` show
+   0 records; they are for later in the workshop.
+5. That the [Workshop](#workshop) section below has the remaining prompts.
+
+## Workshop
+
+After setup, copy each prompt into your agent.
+
+### Checkpoint 1: is your data loaded?
+
+```text
+Did setup finish? How many records are loaded?
+```
+
+You should see 1,847 records.
+
+Fallback: `uv run rag-check`
+
+### Checkpoint 2: can your agent see the tools?
+
+Start a new session, then ask:
+
+```text
+What tools do you have, and is the data loaded?
+```
+
+It should call `data_status` and report 1,847 records in bm25 mode. Look for
+three tools: `data_status`, `search_documents` and `get_document`. Your agent
+may show them with a prefix such as `rag_`. You may also see the same three for
+`sessions`, with 0 records: those are for part two.
+
+If the tools are missing, your agent could not start the search server,
+usually because it cannot find uv. Paste this, then start a new session:
+
+```text
+Find the full path of the uv program on this computer and put that full path in place of "uv" in the rag server settings (opencode.jsonc if this is OpenCode).
+```
+
+### Checkpoint 3: does the cited page actually say it?
+
+Ask a question about U.S. AI rules: your own, or one of these, which the
+documents can answer.
+
+```text
+Can NIH reviewers use ChatGPT to help write their critiques?
+```
+
+```text
+Do I have to tell NSF if I used AI to write my grant proposal?
+```
+
+```text
+Can federal education grant money pay for a chatbot that advises students?
+```
+
+```text
+Should there be a law against making an AI clone of my voice without permission?
+```
+
+```text
+How much did generative AI use grow at federal agencies between 2023 and 2024?
+```
+
+```text
+How many grant applications can one researcher submit to NIH in a year?
+```
+
+Then ask:
+
+```text
+Show me the exact passage you cited, and which document and page it's from.
+```
+
+Open that page yourself. Each document is a text file in `corpus/docs/`, named
+by its ID, with page markers inside. Does the page say that?
+
+Fallback: `uv run rag-search "your question"` shows exactly what search hands
+the agent.
+
+### Search your own AI sessions (15 minutes)
+
+```text
+Turn my AI sessions on this laptop into a searchable collection.
+```
+
+Your agent runs `uv run rag-sessions`. It finds the sessions your AI agents
+saved on this laptop (Claude Code, Codex, OpenCode, Gemini CLI), replaces
+anything that looks like a password or key with `[REDACTED]`, writes one
+short summary per session, keeps each full transcript beside it in
+`sessions/transcripts/`, and loads the summaries into the `sessions` search
+tools. Nothing leaves your laptop. If you use one of those agents, you have at least today's
+setup session. If it finds none (Cursor and Copilot keep their history
+somewhere else), pair with a neighbour or load a chatbot export (below).
+Then start a new session, so the `sessions` tools see the new data. Then ask something
+about your own work history: a decision you made, a prompt you wish you'd kept,
+something from last month.
+
+A summary finds the session. For the details, ask your agent to open the full
+transcript for that session.
+
+To see why the summaries are what gets searched, try the raw layer and ask the
+same question again:
+
+```text
+Rebuild my sessions in raw mode, then ask the same question again.
+```
+
+Web chatbots (ChatGPT, Claude, Gemini) keep your history on their servers.
+Request an export (ChatGPT: Settings › Data controls › Export data; Claude:
+Settings › Privacy › Export data; Gemini: Google Takeout); it arrives by email.
+Then: `Load my chatbot export from <path to the zip>.`
+
+Redaction catches the obvious patterns, not everything. Read a few documents
+in `sessions/docs/` before you share anything.
+
+Fallback: `uv run rag-sessions`, then
+`uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25`.
+`uv run rag-sessions --mode raw` searches every message and tool output instead
+of the summaries. `uv run rag-sessions --export path/to/export.zip` loads a
+chatbot export.
+
+### Your own documents (if there is time)
+
+```text
+Add this document to the collection.
+```
+
+Give it a file, or paste the text. Then ask a question only that document can
+answer.
+
+Before you load anything sensitive: the documents and the search stay on your
+laptop, but your question and every passage search returns are sent to whoever
+runs your model.
+
+Fallback: put one text file per document in `corpus/docs/` with a short header
+(see [Using your own documents](#using-your-own-documents)), then run
+`uv run rag-ingest`.
+
+### Habits that save time
+
+- **Start a new session** after any change to the search server's settings or
+  to `server.py`. The search server only restarts with a new session. Don't
+  ask the agent to reconnect.
+- **Web search.** This folder switches OpenCode's web tools off. Other agents
+  probably have web search on, so check whether each answer came from the
+  documents or from the web.
+
+## Reference
 
 ## What's in this folder
 
 | Path | What it is |
 | --- | --- |
-| [WORKSHOP.md](WORKSHOP.md) | Every prompt used in the workshop, in order |
-| [SETUP.md](SETUP.md) | The setup steps an AI agent follows |
-| [AGENTS.md](AGENTS.md) | A short map for AI agents working in this folder (`CLAUDE.md` and `GEMINI.md` point to it) |
+| [AGENTS.md](AGENTS.md) | Instructions automatically read by compatible AI agents |
 | [opencode.jsonc](opencode.jsonc), [mcp.example.json](mcp.example.json) | How an agent connects to the search server: OpenCode's settings, and an example for other agents |
 | [corpus/](corpus/README.md) | The 62 documents, one text file each in `corpus/docs/` |
 | [evals/starter.jsonl](evals/starter.jsonl) | Test questions with the documents (and pages) that answer them |
