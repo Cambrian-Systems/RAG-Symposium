@@ -131,6 +131,11 @@ say so and tell the user to start a new session from this folder.
 - After changing server settings or `src/rag_symposium/server.py`, tell the
   user to start a new session. The running server cannot be reconnected from
   inside a session.
+- To add the user's own document, run `uv run rag-add <file>` (PDF, Word,
+  HTML or text; `--title`, `--issuer`, `--published`, `--status` and `--source`
+  fill in the header), read the new file in `corpus/docs/` to check the text,
+  then run `uv run rag-ingest` and tell the user to start a new session. For
+  pasted text, save it as a `.txt` file first.
 - For session imports, run `uv run rag-sessions`, show its report unchanged,
   and tell the user to start a new session. Search the summaries; open the
   linked full transcript when details are needed. If no sessions are found,

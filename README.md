@@ -181,9 +181,8 @@ Before you load anything sensitive: the documents and the search stay on your
 laptop, but your question and every passage search returns are sent to whoever
 runs your model.
 
-Fallback: put one text file per document in `corpus/docs/` with a short header
-(see [Using your own documents](#using-your-own-documents)), then run
-`uv run rag-ingest`.
+Fallback: `uv run rag-add path/to/your-file.pdf` (PDF, Word, HTML or text),
+then `uv run rag-ingest`. See [Using your own documents](#using-your-own-documents).
 
 ### Habits that save time
 
@@ -213,6 +212,7 @@ Fallback: put one text file per document in `corpus/docs/` with a short header
 | [src/rag_symposium/search.py](src/rag_symposium/search.py) | `rag-search`: one question's results, from the command line |
 | [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | `rag-eval`: scores the search modes against the test questions |
 | [src/rag_symposium/check.py](src/rag_symposium/check.py) | `rag-check`: PASS/FAIL for the export, the model and the searches |
+| [src/rag_symposium/convert.py](src/rag_symposium/convert.py) | `rag-add`: your own PDF, Word, HTML and text files as corpus documents |
 | [src/rag_symposium/sessions.py](src/rag_symposium/sessions.py) | `rag-sessions`: your own AI sessions as searchable documents |
 | `tests/` | Unit tests and a check that starts the real server: `uv run python -m unittest discover -s tests` and `uv run python tests/mcp_smoke.py` |
 
@@ -399,7 +399,36 @@ can break another.
 
 ## Using your own documents
 
-Put one UTF-8 text file per document in a folder, named `<ID>.md`. Each file
+`rag-add` converts your files into the same format as the workshop documents.
+It reads PDF, Word (`.docx`), saved web pages (`.html`) and plain text (`.txt`,
+`.md`):
+
+```sh
+uv run rag-add report.pdf
+uv run rag-add policy.docx --title "Department AI use policy" --issuer "Your department" --published 2026-08-01 --status "in force" --source https://example.edu/policy-1
+uv run rag-add ~/my-papers
+uv run rag-ingest
+```
+
+Each file becomes `corpus/docs/<ID>.md`, with the ID taken from the file name
+(`--id` to choose one, `--replace` to overwrite). A PDF keeps its own pages;
+the other formats have no page breaks, so their text is cut into numbered
+sections of about 3,000 characters, which stand in for pages in citations.
+Then `uv run rag-ingest` publishes them with the rest, and a new session
+searches them.
+
+It only extracts text that is already in the file: a scanned PDF with no text
+layer is refused (run OCR on it first), and tables keep their words but lose
+their layout. Open the new file and read a page before you trust it.
+
+To keep your documents apart from the workshop ones, write them to their own
+folder with `uv run rag-add ~/my-papers --out my-docs`, and ingest that folder
+as shown below.
+
+### The document format
+
+You can also write a document by hand. Put one UTF-8 text file per document in
+a folder, named `<ID>.md`. Each file
 starts with a header between `---` lines, one `key: JSON value` per line, then
 the text. `<!-- page N -->` lines mark where each page starts; without them the
 whole file is page 1. Only `id`, `title` and `source_url` are required; the

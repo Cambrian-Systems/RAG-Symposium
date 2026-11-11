@@ -6,7 +6,12 @@ description = "A small local MCP server for ingested data"
 requires-python = ">=3.11,<3.14"
 # Keep the tested v1 SDK API. uv.lock pins its exact resolved dependencies.
 # model2vec runs the small static embedding model for hybrid search (CPU only).
-dependencies = ["mcp>=1.30,<2", "model2vec>=0.10,<0.11"]
+# pypdf reads the text out of PDFs for rag-add.
+dependencies = [
+    "mcp>=1.30,<2",
+    "model2vec>=0.10,<0.11",
+    "pypdf>=6,<7",
+]
 
 [project.scripts]
 # Makes `uv run rag-symposium` call main() in src/rag_symposium/server.py.
@@ -19,6 +24,8 @@ rag-eval = "rag_symposium.evaluate:main"
 rag-search = "rag_symposium.search:main"
 # Makes `uv run rag-check` print PASS/FAIL for the export, model and searches.
 rag-check = "rag_symposium.check:main"
+# Makes `uv run rag-add` convert PDF, Word, HTML and text files into corpus documents.
+rag-add = "rag_symposium.convert:main"
 # Makes `uv run rag-sessions` turn local AI-agent sessions into searchable documents.
 rag-sessions = "rag_symposium.sessions:main"
 
