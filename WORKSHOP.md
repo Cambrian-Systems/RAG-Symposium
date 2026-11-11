@@ -179,8 +179,8 @@ Fallback: put one text file per document in `corpus/docs/` with a short header
 - **Start a new session** after any change to the search server's settings or
   to `server.py`. The search server only restarts with a new session. Don't
   ask the agent to reconnect.
-- **Web search.** This folder switches OpenCode's web tools off. In any other
-  agent, switch web search off for today if you can. If you can't, check
-  whether each answer came from the documents or from the web.
+- **Web search.** This folder switches OpenCode's web tools off. Other agents
+  probably have web search on, so check whether each answer came from the
+  documents or from the web.
 - **Stuck?** Pair with a neighbour and keep following along. We will finish
   your laptop with you during the hands-on time.
