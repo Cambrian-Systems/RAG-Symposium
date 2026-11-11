@@ -259,8 +259,7 @@ def main():
               f"{done['characters']:,} characters -> {done['path']}")
     added = len(files) - failed
     if added:
-        # A separate folder gets its own export, so it does not replace the workshop one.
-        where = "" if args.out == Path("corpus/docs") else f" --corpus {args.out} --output my-docs.jsonl"
+        where = "" if args.out == Path("corpus/docs") else f" --corpus {args.out}"
         print(f"\nAdded {added} document{'s' if added != 1 else ''}. "
               f"Read one to check the text, then run: uv run rag-ingest{where}")
     raise SystemExit(1 if failed else 0)

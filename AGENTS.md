@@ -1,7 +1,8 @@
 # Instructions for AI agents
 
-This is a local search tool over 62 official U.S. AI documents, used in a
-workshop. The user may not program. Do the work yourself, keep explanations
+This is a local search tool over a collection of documents. It comes with 62
+official U.S. AI documents from a workshop; the user may have added their own
+or replaced them. The user may not program. Do the work yourself, keep explanations
 short, and show command output unchanged.
 
 ## Setup
@@ -114,7 +115,8 @@ Finish with a short message that says:
 
 ## Answering questions
 
-For AI rules, policies, or guidance, call `search_documents` first. Read the
+For any question the documents might answer (with the workshop documents:
+U.S. AI rules, policies, or guidance), call `search_documents` first. Read the
 results, use `get_document` for more text, and answer only from those records,
 citing record IDs. Do not answer from memory or the web. If the documents do
 not answer the question, say so. Use the `sessions` search tools the same way
@@ -125,17 +127,23 @@ say so and tell the user to start a new session from this folder.
 
 - [README.md](README.md) has the [workshop prompts](README.md#workshop),
   commands, and file locations.
-- Check readiness with `uv run rag-check`: expect four PASS lines and 1,847
-  records for the workshop corpus. Run evals with `uv run rag-eval` and show
-  the output unchanged.
+- Check readiness with `uv run rag-check`: expect four PASS lines (and 1,847
+  records with the workshop documents). Run evals with `uv run rag-eval` and
+  show the output unchanged.
 - After changing server settings or `src/rag_symposium/server.py`, tell the
   user to start a new session. The running server cannot be reconnected from
   inside a session.
 - To add the user's own document, run `uv run rag-add <file>` (PDF, Word,
   HTML or text; `--title`, `--issuer`, `--published`, `--status` and `--source`
   fill in the header), read the new file in `corpus/docs/` to check the text,
-  then run `uv run rag-ingest` and tell the user to start a new session. For
-  pasted text, save it as a `.txt` file first.
+  then run `uv run rag-ingest`. The search tools read the new export on their
+  next call. For pasted text, save it as a `.txt` file first.
+- To search only the user's own documents, run
+  `uv run rag-add <files or folder> --out my-docs`, then
+  `uv run rag-ingest --corpus my-docs`. `uv run rag-ingest` alone switches
+  back to the workshop documents. `evals/starter.jsonl` is about the workshop
+  documents; for the user's own, write a questions file in the same format
+  (`my-questions.jsonl`) and run `uv run rag-eval --questions my-questions.jsonl`.
 - For session imports, run `uv run rag-sessions`, show its report unchanged,
   and tell the user to start a new session. Search the summaries; open the
   linked full transcript when details are needed. If no sessions are found,

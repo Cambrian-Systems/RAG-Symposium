@@ -414,16 +414,49 @@ Each file becomes `corpus/docs/<ID>.md`, with the ID taken from the file name
 (`--id` to choose one, `--replace` to overwrite). A PDF keeps its own pages;
 the other formats have no page breaks, so their text is cut into numbered
 sections of about 3,000 characters, which stand in for pages in citations.
-Then `uv run rag-ingest` publishes them with the rest, and a new session
-searches them.
+Then `uv run rag-ingest` publishes them with the rest, and the search tools
+read them on their next call.
 
 It only extracts text that is already in the file: a scanned PDF with no text
 layer is refused (run OCR on it first), and tables keep their words but lose
 their layout. Open the new file and read a page before you trust it.
 
-To keep your documents apart from the workshop ones, write them to their own
-folder with `uv run rag-add ~/my-papers --out my-docs`, and ingest that folder
-as shown below.
+### Search only your own documents
+
+To swap the workshop documents out for your own, put yours in a separate
+folder and ingest that folder:
+
+```sh
+uv run rag-add ~/my-papers --out my-docs
+uv run rag-ingest --corpus my-docs
+```
+
+The search tools now read your documents and nothing else needs changing: the
+server rereads the export on its next call. `my-docs/` and `data/` are ignored
+by Git, so your files stay on your computer even if you fork this repo.
+`uv run rag-ingest` on its own switches back to the workshop documents.
+
+Tell your agent what the collection is about, so it knows when to search:
+change the "Answering questions" paragraph in [AGENTS.md](AGENTS.md), or say
+it at the start of a session.
+
+### Test questions for your own documents
+
+[evals/starter.jsonl](evals/starter.jsonl) is about the workshop documents, so
+it scores 0% on anything else. Write your own, one JSON line per question, in
+the format shown under [rag-eval](#measure-retrieval-with-rag-eval):
+
+```json
+{"id": "q01", "category": "fact", "question": "Who approves travel over $5,000?", "expect": ["TRAVEL-POLICY"], "pages": [3]}
+```
+
+```sh
+uv run rag-eval --questions my-questions.jsonl
+```
+
+Start with questions you have really asked. Your agent can draft the file from
+your documents; check a few of the expected pages yourself, and add one or two
+questions the documents cannot answer (`"expect": []`).
 
 ### The document format
 
@@ -450,19 +483,20 @@ source_url: "https://example.edu/policy-1"
 Text of the first page.
 ```
 
-Then ingest that folder into its own export, write a few questions with known
-answers (one JSON line each, as in [rag-eval](#measure-retrieval-with-rag-eval)),
-and score them:
+### Two collections side by side
+
+To keep the workshop documents searchable and add a second collection next to
+them, give yours its own export and its own server entry:
 
 ```sh
-uv run rag-ingest --corpus my-docs --output my-docs.jsonl
-uv run rag-eval --data my-docs.jsonl --questions my-questions.jsonl
+uv run rag-ingest --corpus my-docs --output data/my-docs.jsonl
+uv run rag-eval --data data/my-docs.jsonl --questions my-questions.jsonl
 ```
 
-To search it from your agent, point the server's `--data` setting at that export
-(use an absolute path) and start a new session.
-To replace the workshop corpus instead, put the files in `corpus/docs/`, run
-`uv run rag-ingest`, then `uv run rag-eval --questions my-questions.jsonl`.
+Then copy the `rag` entry in your agent's MCP settings (see
+[mcp.example.json](mcp.example.json)), give the copy another name, point its
+`--data` at that export with an absolute path, and start a new session. That
+is how the `sessions` collection is set up.
 
 ## Search your own AI sessions
 

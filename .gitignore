@@ -13,3 +13,6 @@ data/*
 !data/README.md
 # Documents and transcripts rag-sessions writes from your own AI sessions stay local.
 /sessions/
+# Your own documents, exports and test questions stay local too.
+/my-docs/
+/my-*.jsonl
