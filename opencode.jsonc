@@ -6,12 +6,11 @@
   // Keep answers on the documents in this repo: no web search, no web fetch,
   // and no Code Mode or built-in browser, which can also reach the web.
   "websearch": false,
-  // "**" rather than "*": a single star does not match URLs, which contain "/".
   "permissions": [
-    { "action": "webfetch", "resource": "**", "effect": "deny" },
-    { "action": "websearch", "resource": "**", "effect": "deny" },
-    { "action": "execute", "resource": "**", "effect": "deny" },
-    { "action": "browser", "resource": "**", "effect": "deny" }
+    { "action": "webfetch", "resource": "*", "effect": "deny" },
+    { "action": "websearch", "resource": "*", "effect": "deny" },
+    { "action": "execute", "resource": "*", "effect": "deny" },
+    { "action": "browser", "resource": "*", "effect": "deny" }
   ],
   "mcp": {
     "servers": {
