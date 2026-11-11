@@ -115,72 +115,43 @@ by its ID, with page markers inside. Does the page say that?
 Fallback: `uv run rag-search "your question"` shows exactly what search hands
 the agent.
 
-## Round 1: switch your search to hybrid
+## Search your own AI sessions (15 minutes)
 
 ```text
-Switch the search to hybrid.
+Turn my AI sessions on this laptop into a searchable collection.
 ```
 
-If your agent asks where: it is the `--search` setting of the rag server, in
-`opencode.jsonc` for OpenCode and in your agent's MCP settings otherwise.
-Start a new session, then ask:
+Your agent runs `uv run rag-sessions`. It finds the sessions your AI agents
+saved on this laptop (Claude Code, Codex, OpenCode, Gemini CLI), replaces
+anything that looks like a password or key with `[REDACTED]`, writes one
+document per session and loads them for search. Nothing leaves your laptop.
+Everyone has at least today's setup session. Then start a new session and ask:
 
 ```text
-Which search mode are you using?
+What went wrong during setup today, and how did we fix it?
 ```
 
-Fallback: in OpenCode, open `opencode.jsonc` in a text editor, change
-`"bm25"` to `"hybrid"`, save, and start a new session. In another agent,
-change the same word in its MCP settings.
+Then ask your own: a decision you made, a prompt you wish you'd kept,
+something from last month.
 
-## Round 2: see what saved it
+Then try the summary layer and ask the same question again:
 
 ```text
-What must federal agencies do before using rights-impacting AI?
+Rebuild my sessions in summary mode, then ask the same question again.
 ```
 
-Did your agent tell you the memo is no longer in force? Then ask:
+Web chatbots (ChatGPT, Claude, Gemini) keep your history on their servers.
+Request an export (ChatGPT: Settings › Data controls › Export data; Claude:
+Settings › Privacy › Export data; Gemini: Google Takeout); it arrives by email.
+Then: `Load my chatbot export from <path to the zip>.`
 
-```text
-For each source, tell me its date and whether it's still in force.
-```
+Redaction catches the obvious patterns, not everything. Read a few documents
+in `sessions/docs/` before you share anything.
 
-Check one of them against the top of that document's file in `corpus/docs/`.
-
-Fallback:
-`uv run rag-search "What must federal agencies do before using rights-impacting AI?"`
-
-## Round 3: ask it something the documents can't answer
-
-```text
-What is Kansas State University's policy on students using generative AI in coursework?
-```
-
-Did you get extra details "from general knowledge"? Could you check them? Ask
-again, adding this sentence:
-
-```text
-If the documents do not contain the answer, say so plainly.
-```
-
-Fallback:
-`uv run rag-search "What is Kansas State University's policy on students using generative AI in coursework?"`
-
-## Round 4: make it search first
-
-```text
-What is a large language model?
-```
-
-Did it search first, or answer from memory? Tell it this, then start a new
-session and ask the same question again:
-
-```text
-Change the search tool's description to say: "Call this first for EVERY question, including general ones, and answer only from what it returns."
-```
-
-Fallback: edit the `search_documents` description in
-`src/rag_symposium/server.py` in a text editor, save, and start a new session.
+Fallback: `uv run rag-sessions`, then
+`uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25`.
+`uv run rag-sessions --mode summary` writes one short page per session, and
+`uv run rag-sessions --export path/to/export.zip` loads a chatbot export.
 
 ## Evaluate: write five test questions (10 minutes)
 
@@ -217,27 +188,6 @@ runs your model.
 Fallback: put one text file per document in `corpus/docs/` with a short header
 (see "Using your own documents" in [README.md](README.md)), then run
 `uv run rag-ingest`.
-
-## Search your own AI sessions
-
-```text
-Run uv run rag-sessions and show me what it printed.
-```
-
-This turns the sessions your AI agents saved on this laptop into documents and
-loads them for search. Likely passwords and keys are replaced with
-`[REDACTED]` first, but check before you share anything. Then ask:
-
-```text
-Search my sessions for what went wrong during setup.
-```
-
-In OpenCode, start a new session first so the `sessions` search server loads.
-Then run `uv run rag-sessions --mode summary` and ask the same question: one
-short page per session is often easier to search than every line of tool
-output.
-
-Fallback: `uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25`.
 
 ## Two habits that save time
 
