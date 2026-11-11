@@ -48,14 +48,16 @@ compare.
 ## Checkpoint 1: is your data loaded?
 
 ```text
-Run rag-check and tell me whether the documents are loaded and how many records there are.
+Did setup finish? How many records are loaded?
 ```
 
-You should see 1,847 records. Fallback: `uv run rag-check`.
+You should see 1,847 records.
+
+Fallback: `uv run rag-check`
 
 ## Checkpoint 2: can your agent see the tools?
 
-Start a **new session**, then ask:
+Start a new session, then ask:
 
 ```text
 What tools do you have, and is the data loaded?
@@ -74,10 +76,37 @@ Find the full path of the uv program on this computer and put that full path in 
 
 ## Checkpoint 3: does the cited page actually say it?
 
-Ask two questions of your own about U.S. AI rules. Then ask:
+Ask a question about U.S. AI rules: your own, or one of these, which the
+documents can answer.
 
 ```text
-Show me the passage you cited, word for word, and which document and page it came from.
+Can NIH reviewers use ChatGPT to help write their critiques?
+```
+
+```text
+Do I have to tell NSF if I used AI to write my grant proposal?
+```
+
+```text
+Can federal education grant money pay for a chatbot that advises students?
+```
+
+```text
+Should there be a law against making an AI clone of my voice without permission?
+```
+
+```text
+How much did generative AI use grow at federal agencies between 2023 and 2024?
+```
+
+```text
+How many grant applications can one researcher submit to NIH in a year?
+```
+
+Then ask:
+
+```text
+Show me the exact passage you cited, and which document and page it's from.
 ```
 
 Open that page yourself. Each document is a text file in `corpus/docs/`, named
@@ -89,13 +118,15 @@ the agent.
 ## Round 1: switch your search to hybrid
 
 ```text
-Change the rag search server from "bm25" to "hybrid". It is the --search value: in opencode.jsonc if this is OpenCode, otherwise in your MCP settings.
+Switch the search to hybrid.
 ```
 
+If your agent asks where: it is the `--search` setting of the rag server, in
+`opencode.jsonc` for OpenCode and in your agent's MCP settings otherwise.
 Start a new session, then ask:
 
 ```text
-Call data_status and tell me the search mode.
+Which search mode are you using?
 ```
 
 Fallback: in OpenCode, open `opencode.jsonc` in a text editor, change
@@ -108,15 +139,13 @@ change the same word in its MCP settings.
 What must federal agencies do before using rights-impacting AI?
 ```
 
-Did your agent say the memo was rescinded? Then paste this and ask the same
-question again:
+Did your agent tell you the memo is no longer in force? Then ask:
 
 ```text
-For every source you use, state its date and status, and prefer documents that are currently in force.
+For each source, tell me its date and whether it's still in force.
 ```
 
-Check one row of its sources table against the header of that document in
-`corpus/docs/`.
+Check one of them against the top of that document's file in `corpus/docs/`.
 
 Fallback:
 `uv run rag-search "What must federal agencies do before using rights-impacting AI?"`
@@ -127,7 +156,7 @@ Fallback:
 What is Kansas State University's policy on students using generative AI in coursework?
 ```
 
-Did you get extra "general knowledge" details? Could you check them? Ask
+Did you get extra details "from general knowledge"? Could you check them? Ask
 again, adding this sentence:
 
 ```text
@@ -143,11 +172,11 @@ Fallback:
 What is a large language model?
 ```
 
-Did it answer without searching? Paste this, then start a new session and ask
-the same question again:
+Did it search first, or answer from memory? Tell it this, then start a new
+session and ask the same question again:
 
 ```text
-In src/rag_symposium/server.py, replace the first line of the search_documents description with: "Search the document collection. Call this first for EVERY question, including general ones, and answer only from what it returns, citing [record-id]." Do not try to reconnect; I will start a new session.
+Change the search tool's description to say: "Call this first for EVERY question, including general ones, and answer only from what it returns."
 ```
 
 Fallback: edit the `search_documents` description in
@@ -156,20 +185,38 @@ Fallback: edit the `search_documents` description in
 ## Evaluate: write five test questions (10 minutes)
 
 ```text
-Write five test questions about NIST-AI-600-1, including one the documents cannot answer. Tell me where each answer is.
+Write five test questions about one of the documents. Make one of them something the documents can't answer.
 ```
 
-Open the source page for one of them yourself. Does it say that? Then:
+Open the page for one of them yourself. Does it really say that? Then add one
+question of your own, something you would really ask: an agent writes
+questions quickly, but it writes easy ones, in the documents' own words.
 
 ```text
-Add them to evals/starter.jsonl in the same format as the existing lines, run rag-eval, and paste the rag-eval lines for the new questions exactly as printed.
+Add these to the evals and run them. Show me the raw results.
 ```
 
-Read what the tool printed, not what the agent says it printed. You can pick
-any document you care about in place of `NIST-AI-600-1`.
+Read the results yourself, not only the agent's summary of them.
 
 Fallback: copy the format of a line in `evals/starter.jsonl` in a text editor,
 then run `uv run rag-eval`.
+
+## Your own documents (if there is time)
+
+```text
+Add this document to the collection.
+```
+
+Give it a file, or paste the text. Then ask a question only that document can
+answer.
+
+Before you load anything sensitive: the documents and the search stay on your
+laptop, but your question and every passage search returns are sent to whoever
+runs your model.
+
+Fallback: put one text file per document in `corpus/docs/` with a short header
+(see "Using your own documents" in [README.md](README.md)), then run
+`uv run rag-ingest`.
 
 ## Two habits that save time
 
@@ -180,4 +227,4 @@ then run `uv run rag-eval`.
   agent, switch web search off for today if you can. If you can't, check
   whether each answer came from the documents or from the web.
 - **Stuck?** Pair with a neighbour and keep following along. We will finish
-  your laptop with you during the open floor.
+  your laptop with you during the hands-on time.

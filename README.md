@@ -121,6 +121,9 @@ agents were not tested before the workshop.
 | [evals/starter.jsonl](evals/starter.jsonl) | Starter questions with the documents (and pages) that answer them |
 | [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
 | [mcp.example.json](mcp.example.json) | An example client configuration for launching the server over stdio |
+| [SETUP.md](SETUP.md) | The setup steps an AI agent follows from the one-prompt setup |
+| [AGENTS.md](AGENTS.md) | A short map for AI agents: where the search mode, tool description, test questions and documents live (`CLAUDE.md` and `GEMINI.md` point to it) |
+| [WORKSHOP.md](WORKSHOP.md) | Every prompt used in the workshop, in order |
 | [pyproject.toml](pyproject.toml) | Project requirements, packaging, and the `rag-symposium` command entry point |
 | [uv.lock](uv.lock) | Generated exact dependency versions and download hashes; let uv manage it |
 | [.gitignore](.gitignore) | Keeps installed dependencies, generated files and local ingestion data off Git |
