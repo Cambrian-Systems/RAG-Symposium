@@ -214,6 +214,32 @@ class EndToEndTests(SessionTestCase):
             sessions.main()
         return printed.getvalue()
 
+    def test_summary_mode_keeps_the_full_transcript_beside_the_summary(self):
+        """Summaries are searched; the full transcripts are kept, named in the summary, and not searched."""
+        home = self.folder / "home"
+        shutil.copytree(HOME, home)
+        out, output = self.folder / "sessions" / "docs", self.folder / "data" / "sessions.jsonl"
+        kept = self.folder / "sessions" / "transcripts"
+        kept.mkdir(parents=True)
+        (kept / "SESSION-OLD-2020-01-01-000000.md").write_text("left from an earlier run")
+        printed = self.run_command(home, "--out", str(out), "--output", str(output), "--mode", "summary",
+                                   "--tools", "claude,codex")
+        self.assertIn(f"Kept 2 full transcripts in {kept.as_posix()}", printed)
+        summaries, transcripts = sorted(out.glob("*.md")), sorted(kept.glob("*.md"))
+        self.assertEqual([p.name for p in summaries], [p.name for p in transcripts])
+        self.assertEqual(len(summaries), 2)
+        for short, full in zip(summaries, transcripts):
+            self.assertIn(f"Full transcript: {full.as_posix()}", short.read_text(encoding="utf-8"))
+            self.assertNotIn("Full transcript:", full.read_text(encoding="utf-8"))
+            self.assertNotIn("Turns:", full.read_text(encoding="utf-8"))
+            self.assertNotIn(FAKE_KEY, full.read_text(encoding="utf-8"))
+        # Only the summaries are published for search.
+        self.assertEqual(RecordStore(output, "bm25").status()["record_count"], 2)
+        # Raw mode writes no transcripts folder of its own.
+        other = self.folder / "raw" / "docs"
+        self.run_command(home, "--out", str(other), "--output", str(output), "--tools", "claude")
+        self.assertFalse((self.folder / "raw" / "transcripts").exists())
+
     def test_full_run_publishes_searchable_records(self):
         home = self.folder / "home"
         shutil.copytree(HOME, home)

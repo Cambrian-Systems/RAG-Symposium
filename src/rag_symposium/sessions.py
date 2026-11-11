@@ -9,7 +9,9 @@ original session files are only read, never changed.
 
 Two modes show why chunking matters:
 - raw: every message, tool call and tool output. Long and noisy.
-- summary: one short page per session built from its messages.
+- summary: one short page per session built from its messages. The full
+  transcript is kept next to it in a transcripts/ folder that search does not
+  read, and the summary names that file.
 
 Likely secrets (API keys, tokens, private keys, card numbers) are replaced with
 [REDACTED] before anything is written.
@@ -555,12 +557,15 @@ def raw_pages(item: dict) -> list[str]:
     return paginate([LABELS[kind] + text for kind, text in item["entries"]])
 
 
-def summary_pages(item: dict, title: str, date: str) -> list[str]:
-    """One short page: what was asked, what else was said, and how it ended."""
+def summary_pages(item: dict, title: str, date: str, transcript: str | None = None) -> list[str]:
+    """One short page: what was asked, what else was said, how it ended, and where the full transcript is."""
     yours = [text for kind, text in item["entries"] if kind == "you"]
     replies = [text for kind, text in item["entries"] if kind == "agent"]
     lines = [f"Session: {title}", f"Tool: {TOOLS[item['tool']]}", f"Date: {date}",
-             f"Turns: {len(yours)}", ""]
+             f"Turns: {len(yours)}"]
+    if transcript:
+        lines.append(f"Full transcript: {transcript}")
+    lines.append("")
     if yours:
         lines += [f"You first asked: {trim(yours[0], SUMMARY_FIRST)}", ""]
     if len(yours) > 1:
@@ -586,8 +591,11 @@ def document_id(item: dict, date: str, taken: set) -> str:
     raise ValueError(f"Two sessions share the ID {candidate}")
 
 
-def render(item: dict, mode: str, taken: set) -> tuple[str, str, int]:
-    """Return (document ID, corpus-format Markdown, redactions made) for one session."""
+def render(item: dict, mode: str, taken: set, transcript: str | None = None) -> tuple[str, str, int]:
+    """Return (document ID, corpus-format Markdown, redactions made) for one session.
+
+    transcript is the path a summary names as its full transcript.
+    """
     redactions, entries = 0, []
     for kind, text in item["entries"]:
         text, count = scrub(text)
@@ -600,7 +608,7 @@ def render(item: dict, mode: str, taken: set) -> tuple[str, str, int]:
     first = next((text for kind, text in entries if kind == "you"), "")
     title = trim(first, TITLE_LENGTH) or f"{TOOLS[item['tool']]} session {date}"
     doc_id = document_id(item, date, taken)
-    pages = summary_pages(item, title, date) if mode == "summary" else raw_pages(item)
+    pages = summary_pages(item, title, date, transcript) if mode == "summary" else raw_pages(item)
     header = {"id": doc_id, "title": title, "issuer": TOOLS[item["tool"]], "published": date,
               "status": "session", "source_url": item["source_url"]}
     body = "\n\n".join(f"<!-- page {n} -->\n{text}" for n, text in enumerate(pages, 1))
@@ -633,7 +641,11 @@ def build(home: Path, out: Path, output: Path, mode: str = "raw", since: float |
     sessions.sort(key=lambda item: (item["updated"], item["tool"], item["key"]), reverse=True)
     sessions = sorted(sessions[:max_sessions] if max_sessions else sessions,
                       key=lambda item: (item["started"], item["tool"], item["key"]))
+    # Summary mode keeps every full transcript beside the summaries, in a folder
+    # search does not read.
+    transcripts = out.parent / "transcripts" if mode == "summary" else None
     summary = {"found": found, "documents": 0, "redactions": 0, "records": 0, "problems": problems,
+               "transcripts": str(transcripts) if transcripts else None,
                "looked_in": [str(sources[t]) for t in sources if t in tools] + [str(p) for p in exports]}
     if not sessions:
         return summary
@@ -642,9 +654,19 @@ def build(home: Path, out: Path, output: Path, mode: str = "raw", since: float |
     # hold exactly this run's sessions. Only files this command names are removed.
     for old in out.glob("SESSION-*.md"):
         old.unlink()
-    taken = set()
+    if transcripts:
+        transcripts.mkdir(parents=True, exist_ok=True)
+        for old in transcripts.glob("SESSION-*.md"):
+            old.unlink()
+    taken, taken_full = set(), set()
     for item in sessions:
-        doc_id, content, redactions = render(item, mode, taken)
+        link = None
+        if transcripts:
+            full_id, full, _ = render(item, "raw", taken_full)
+            path = transcripts / f"{full_id}.md"
+            path.write_text(full, encoding="utf-8", errors="replace", newline="\n")
+            link = path.as_posix()
+        doc_id, content, redactions = render(item, mode, taken, link)
         (out / f"{doc_id}.md").write_text(content, encoding="utf-8", errors="replace", newline="\n")
         summary["documents"] += 1
         summary["redactions"] += redactions
@@ -657,7 +679,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Turn your AI-agent session history into searchable documents")
     parser.add_argument("--mode", choices=("raw", "summary"), default="raw",
-                        help="raw: every message and tool output (default); summary: one short page per session")
+                        help="raw: every message and tool output (default); summary: one short page per session, "
+                             "with the full transcript kept beside it in a transcripts folder that is not searched")
     parser.add_argument("--since", type=float, metavar="DAYS",
                         help="Only sessions active in the last DAYS days (default: all)")
     parser.add_argument("--tools", default=",".join(TOOLS),
@@ -696,6 +719,9 @@ def main():
             if count:
                 print(f"  {TOOLS[tool]:<12} {count}")
         print(f"Wrote {summary['documents']} documents ({args.mode} mode) to {args.out}")
+        if summary["transcripts"]:
+            print(f"Kept {summary['documents']} full transcripts in {Path(summary['transcripts']).as_posix()} "
+                  "(not searched; each summary names its file)")
         print(f"Redacted {summary['redactions']} likely secrets (replaced with [REDACTED])")
         print(f"Published {summary['records']} records to {args.output}")
     if summary["problems"]:

@@ -154,8 +154,10 @@ in `sessions/docs/` before you share anything.
 
 Fallback: `uv run rag-sessions`, then
 `uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25`.
-`uv run rag-sessions --mode summary` writes one short page per session, and
-`uv run rag-sessions --export path/to/export.zip` loads a chatbot export.
+`uv run rag-sessions --mode summary` writes one short page per session, keeps
+each full transcript in `sessions/transcripts/` (not searched) and names that
+file in the summary. `uv run rag-sessions --export path/to/export.zip` loads a
+chatbot export.
 
 ## Your own documents (if there is time)
 

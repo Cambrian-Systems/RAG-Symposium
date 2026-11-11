@@ -517,7 +517,7 @@ uv run rag-sessions --export ~/Downloads/chatgpt-export.zip --tools chatgpt
 | Option | Effect |
 | --- | --- |
 | `--mode raw` (default) | Every message, each tool call as one line (`[tool: Bash] uv sync --locked`), and tool output; a page marker about every 3,000 characters |
-| `--mode summary` | One short page per session: title, tool, date, number of turns, your first message, your other messages cut short, and the agent's final message |
+| `--mode summary` | One short page per session: title, tool, date, number of turns, your first message, your other messages cut short, and the agent's final message. Each full transcript is kept in `sessions/transcripts/`, which search does not read, and the summary names that file |
 | `--since DAYS` | Only sessions active in the last DAYS days (default: all) |
 | `--tools` | Comma-separated: `claude`, `codex`, `opencode`, `gemini`, `chatgpt`, `claude-ai` (default: all) |
 | `--max-sessions N` | Keep the N most recent sessions |
