@@ -1,0 +1,7 @@
+{
+ "id": "prt_s3",
+ "messageID": "msg_s2",
+ "sessionID": "ses_storage1",
+ "type": "text",
+ "text": "Start with bm25; it is already set in opencode.jsonc."
+}

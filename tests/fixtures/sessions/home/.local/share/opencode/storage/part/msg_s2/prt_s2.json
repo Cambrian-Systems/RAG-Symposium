@@ -1,0 +1,15 @@
+{
+ "id": "prt_s2",
+ "messageID": "msg_s2",
+ "sessionID": "ses_storage1",
+ "type": "tool",
+ "tool": "read",
+ "callID": "c1",
+ "state": {
+  "status": "completed",
+  "input": {
+   "filePath": "/tmp/demo/opencode.jsonc"
+  },
+  "output": "\"--search\", \"bm25\""
+ }
+}

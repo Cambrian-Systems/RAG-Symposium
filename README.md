@@ -118,6 +118,7 @@ agents were not tested before the workshop.
 | [src/rag_symposium/search.py](src/rag_symposium/search.py) | `rag-search`: one query's results in each mode, from the command line |
 | [src/rag_symposium/evaluate.py](src/rag_symposium/evaluate.py) | Scoring search modes against questions with known answers |
 | [src/rag_symposium/check.py](src/rag_symposium/check.py) | `rag-check`: PASS/FAIL for the export, the offline embedding model and both searches |
+| [src/rag_symposium/sessions.py](src/rag_symposium/sessions.py) | `rag-sessions`: your own AI-agent sessions as documents, with secrets redacted, published to `data/sessions.jsonl` |
 | [evals/starter.jsonl](evals/starter.jsonl) | Starter questions with the documents (and pages) that answer them |
 | [src/rag_symposium/__init__.py](src/rag_symposium/__init__.py) | Marks the Python package; importing it does not start a server |
 | [mcp.example.json](mcp.example.json) | An example client configuration for launching the server over stdio |
@@ -138,6 +139,7 @@ agents were not tested before the workshop.
 | [tests/test_evaluate.py](tests/test_evaluate.py) | How `rag-eval` counts a hit, a miss, a page miss and a not-found warning |
 | [tests/test_check.py](tests/test_check.py) | Which `rag-check` lines pass or fail with a missing export or model |
 | [tests/test_search.py](tests/test_search.py) | That `rag-search` prints each result's date and status |
+| [tests/test_sessions.py](tests/test_sessions.py) | Each session format `rag-sessions` reads, redaction, summary mode and a full run, on made-up sessions in `tests/fixtures/sessions/` |
 | [tests/mcp_smoke.py](tests/mcp_smoke.py) | A small MCP client that starts and calls the real stdio server |
 | [tests/http_smoke.py](tests/http_smoke.py) | Real HTTP calls, browser-origin checks, and server cleanup |
 
@@ -496,6 +498,43 @@ uv run rag-eval --data my-docs.jsonl --questions my-questions.jsonl
 Start the server with `--data` pointing at the same export (use an absolute path).
 To replace the workshop corpus instead, put the files in `corpus/docs/`, run
 `uv run rag-ingest`, then `uv run rag-eval --questions my-questions.jsonl`.
+
+## Search your own AI sessions
+
+`rag-sessions` reads the session history coding agents keep on this computer
+(Claude Code, Codex, OpenCode, Gemini CLI), writes one document per session to
+`sessions/docs/` in the same format as the corpus, and publishes them to
+`data/sessions.jsonl`. Both stay on this computer and off Git.
+
+```sh
+uv run rag-sessions
+uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25
+uv run rag-sessions --mode summary
+uv run rag-sessions --tools claude,codex --since 7 --max-sessions 50
+uv run rag-sessions --export ~/Downloads/chatgpt-export.zip --tools chatgpt
+```
+
+| Option | Effect |
+| --- | --- |
+| `--mode raw` (default) | Every message, each tool call as one line (`[tool: Bash] uv sync --locked`), and tool output; a page marker about every 3,000 characters |
+| `--mode summary` | One short page per session: title, tool, date, number of turns, your first message, your other messages cut short, and the agent's final message |
+| `--since DAYS` | Only sessions active in the last DAYS days (default: all) |
+| `--tools` | Comma-separated: `claude`, `codex`, `opencode`, `gemini`, `chatgpt`, `claude-ai` (default: all) |
+| `--max-sessions N` | Keep the N most recent sessions |
+| `--export PATH` | A ChatGPT or Claude.ai data export: the `.zip` or its `conversations.json`. Repeatable |
+| `--out`, `--output` | The documents folder (default `sessions/docs`) and the export (default `data/sessions.jsonl`) |
+
+Each run replaces the `SESSION-*.md` documents from the last run. Likely
+secrets (`sk-` and `ghp_` keys, AWS key IDs, Bearer tokens, private keys,
+`password = ...` style lines and card numbers) are replaced with `[REDACTED]`
+before anything is written; the report says how many. That is a pattern match,
+not a guarantee: read a few documents before you share any. Thinking text and
+sub-agent sessions are left out. Raw transcripts are long, and their tool
+output tends to crowd the actual conversation out of search results; compare
+the same question against `--mode summary`.
+
+[opencode.jsonc](opencode.jsonc) also starts a second server, `sessions`, that
+serves `data/sessions.jsonl` with `bm25` search.
 
 ## Verify and explore
 

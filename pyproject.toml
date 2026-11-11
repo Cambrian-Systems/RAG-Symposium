@@ -20,6 +20,8 @@ rag-eval = "rag_symposium.evaluate:main"
 rag-search = "rag_symposium.search:main"
 # Makes `uv run rag-check` print PASS/FAIL for the export, model and searches.
 rag-check = "rag_symposium.check:main"
+# Makes `uv run rag-sessions` turn local AI-agent sessions into searchable documents.
+rag-sessions = "rag_symposium.sessions:main"
 
 [build-system]
 # Hatchling packages the source so command-line entry points/imports work.

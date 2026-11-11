@@ -1,0 +1,57 @@
+{
+ "sessionId": "44444444-dddd-4eee-8fff-000000000004",
+ "projectHash": "0a1b2c3d",
+ "startTime": "2026-11-09T09:00:00.000Z",
+ "lastUpdated": "2026-11-09T09:02:00.000Z",
+ "messages": [
+  {
+   "id": "m1",
+   "timestamp": "2026-11-09T09:00:00.000Z",
+   "type": "user",
+   "content": "Is the data loaded?"
+  },
+  {
+   "id": "m2",
+   "timestamp": "2026-11-09T09:00:05.000Z",
+   "type": "gemini",
+   "content": "I'll check the record count.",
+   "toolCalls": [
+    {
+     "id": "t1",
+     "name": "run_shell_command",
+     "args": {
+      "command": "uv run rag-check"
+     },
+     "status": "success",
+     "result": [
+      {
+       "functionResponse": {
+        "id": "t1",
+        "name": "run_shell_command",
+        "response": {
+         "output": "PASS  export: data/documents.jsonl has 1847 records"
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m3",
+   "timestamp": "2026-11-09T09:00:06.000Z",
+   "type": "info",
+   "content": "INFO LINE"
+  },
+  {
+   "id": "m4",
+   "timestamp": "2026-11-09T09:02:00.000Z",
+   "type": "gemini",
+   "content": [
+    {
+     "text": "Yes: 1,847 records are loaded."
+    }
+   ]
+  }
+ ]
+}

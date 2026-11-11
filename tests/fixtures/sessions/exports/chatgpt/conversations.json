@@ -1,0 +1,133 @@
+[
+ {
+  "title": "Citing pages",
+  "create_time": 1794214800.0,
+  "update_time": 1794215100.0,
+  "conversation_id": "55555555-eeee-4fff-8000-000000000005",
+  "current_node": "n6",
+  "mapping": {
+   "n0": {
+    "id": "n0",
+    "message": null,
+    "parent": null,
+    "children": [
+     "n1"
+    ]
+   },
+   "n1": {
+    "id": "n1",
+    "message": {
+     "author": {
+      "role": "system"
+     },
+     "content": {
+      "content_type": "text",
+      "parts": [
+       ""
+      ]
+     },
+     "metadata": {
+      "is_visually_hidden_from_conversation": true
+     }
+    },
+    "parent": "n0",
+    "children": [
+     "n2"
+    ]
+   },
+   "n2": {
+    "id": "n2",
+    "message": {
+     "author": {
+      "role": "user"
+     },
+     "create_time": 1794214800.0,
+     "content": {
+      "content_type": "text",
+      "parts": [
+       "How should I cite a page from the search results?"
+      ]
+     }
+    },
+    "parent": "n1",
+    "children": [
+     "n3",
+     "n4"
+    ]
+   },
+   "n3": {
+    "id": "n3",
+    "message": {
+     "author": {
+      "role": "assistant"
+     },
+     "create_time": 1794214810.0,
+     "recipient": "all",
+     "content": {
+      "content_type": "text",
+      "parts": [
+       "OLD BRANCH ANSWER"
+      ]
+     }
+    },
+    "parent": "n2",
+    "children": []
+   },
+   "n4": {
+    "id": "n4",
+    "message": {
+     "author": {
+      "role": "assistant"
+     },
+     "create_time": 1794214900.0,
+     "recipient": "python",
+     "content": {
+      "content_type": "code",
+      "language": "python",
+      "text": "print('[OMB-M-24-10-p3]')"
+     }
+    },
+    "parent": "n2",
+    "children": [
+     "n5"
+    ]
+   },
+   "n5": {
+    "id": "n5",
+    "message": {
+     "author": {
+      "role": "tool",
+      "name": "python"
+     },
+     "create_time": 1794214901.0,
+     "content": {
+      "content_type": "execution_output",
+      "text": "[OMB-M-24-10-p3]"
+     }
+    },
+    "parent": "n4",
+    "children": [
+     "n6"
+    ]
+   },
+   "n6": {
+    "id": "n6",
+    "message": {
+     "author": {
+      "role": "assistant"
+     },
+     "create_time": 1794215100.0,
+     "recipient": "all",
+     "content": {
+      "content_type": "text",
+      "parts": [
+       "Cite the record ID in brackets, like [OMB-M-24-10-p3]."
+      ]
+     }
+    },
+    "parent": "n5",
+    "children": []
+   }
+  }
+ }
+]

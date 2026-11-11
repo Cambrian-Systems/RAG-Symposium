@@ -218,6 +218,27 @@ Fallback: put one text file per document in `corpus/docs/` with a short header
 (see "Using your own documents" in [README.md](README.md)), then run
 `uv run rag-ingest`.
 
+## Search your own AI sessions
+
+```text
+Run uv run rag-sessions and show me what it printed.
+```
+
+This turns the sessions your AI agents saved on this laptop into documents and
+loads them for search. Likely passwords and keys are replaced with
+`[REDACTED]` first, but check before you share anything. Then ask:
+
+```text
+Search my sessions for what went wrong during setup.
+```
+
+In OpenCode, start a new session first so the `sessions` search server loads.
+Then run `uv run rag-sessions --mode summary` and ask the same question: one
+short page per session is often easier to search than every line of tool
+output.
+
+Fallback: `uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25`.
+
 ## Two habits that save time
 
 - **Start a new session** after any change to the search server's settings or

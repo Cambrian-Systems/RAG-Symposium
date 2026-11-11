@@ -26,6 +26,13 @@ Where things are:
   header; see "Using your own documents" in README.md), then run
   `uv run rag-ingest`.
 - **Trying a search by hand:** `uv run rag-search "question" --mode bm25`.
+- **Searching your own AI sessions:** `uv run rag-sessions` turns this
+  computer's Claude Code, Codex, OpenCode and Gemini CLI sessions (and, with
+  `--export PATH`, a ChatGPT or Claude.ai export) into documents in
+  `sessions/docs/` and publishes `data/sessions.jsonl`, with likely secrets
+  redacted. `--mode summary` writes one short page per session. Search it with
+  `uv run rag-search "question" --data data/sessions.jsonl --mode bm25`, or
+  through the `sessions` server in `opencode.jsonc`. Show its report unchanged.
 
 After any change to the server's settings or to `server.py`, tell the person
 to start a new session: the running server does not pick up changes, and it

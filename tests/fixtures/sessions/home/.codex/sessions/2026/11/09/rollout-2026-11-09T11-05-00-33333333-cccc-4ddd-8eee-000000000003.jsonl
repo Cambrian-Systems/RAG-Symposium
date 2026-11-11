@@ -1,0 +1,2 @@
+{"timestamp": "2026-11-09T11:05:00Z", "type": "session_meta", "payload": {"id": "33333333-cccc-4ddd-8eee-000000000003", "source": {"subagent": {"thread_spawn": {"parent_thread_id": "22222222-bbbb-4ccc-8ddd-000000000002"}}}}}
+{"timestamp": "2026-11-09T11:05:01Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "SUBAGENT TASK"}]}}

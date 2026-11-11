@@ -20,6 +20,12 @@
         "command": ["uv", "run", "--locked", "rag-symposium", "--search", "bm25"],
         // Show each tool call by name instead of wrapping tools in code.
         "codemode": false
+      },
+      "sessions": {
+        "type": "local",
+        // The same server, reading your own AI sessions after `uv run rag-sessions`.
+        "command": ["uv", "run", "--locked", "rag-symposium", "--data", "data/sessions.jsonl", "--search", "bm25"],
+        "codemode": false
       }
     }
   }
