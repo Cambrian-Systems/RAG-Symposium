@@ -157,25 +157,6 @@ Fallback: `uv run rag-sessions`, then
 `uv run rag-sessions --mode summary` writes one short page per session, and
 `uv run rag-sessions --export path/to/export.zip` loads a chatbot export.
 
-## Evaluate: write five test questions (10 minutes)
-
-```text
-Write five test questions about one of the documents. Make one of them something the documents can't answer.
-```
-
-Open the page for one of them yourself. Does it really say that? Then add one
-question of your own, something you would really ask: an agent writes
-questions quickly, but it writes easy ones, in the documents' own words.
-
-```text
-Add these to the evals and run them. Show me the raw results.
-```
-
-Read the results yourself, not only the agent's summary of them.
-
-Fallback: copy the format of a line in `evals/starter.jsonl` in a text editor,
-then run `uv run rag-eval`.
-
 ## Your own documents (if there is time)
 
 ```text
