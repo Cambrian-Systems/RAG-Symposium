@@ -3,7 +3,7 @@
 A local coding agent can run this file, or an attendee can use the fallback:
     uv run python setup-workshop.py
 The script installs locked dependencies, runs checks, and rebuilds the generated
-page export. It does not configure a chatbot, sign in, or create a cloud tunnel.
+page export. It does not connect an agent to the search tools or sign in.
 """
 import json
 import shutil
@@ -39,7 +39,6 @@ def main():
     run_step(uv, "locked dependencies", ["sync", "--locked"])
     run_step(uv, "project tests", ["run", "--locked", "python", "-m", "unittest", "discover", "-s", "tests", "-v"])
     run_step(uv, "local-process MCP tools", ["run", "--locked", "python", "tests/mcp_smoke.py"])
-    run_step(uv, "local-HTTP MCP tools", ["run", "--locked", "python", "tests/http_smoke.py"])
     run_step(uv, "page ingestion", ["run", "--locked", "rag-ingest", "--mode", "page"])
     # Read through the real adapter, rather than treating an ingestion exit code
     # as proof that the exported records are usable by the server.
@@ -60,7 +59,6 @@ print(json.dumps({"count": len(records), "example_id": record["id"], "source": r
     print("2. TOOLS CONNECTED: pending actual chatbot connection; local protocol checks passed")
     print("3. ANSWER SUPPORTED: pending a real chatbot tool call and source check")
     print("Next: follow the Setup section in README.md to connect your selected MCP client.")
-    print("The temporary test servers have stopped. A client/server connection must be started separately.")
 
 
 if __name__ == "__main__":
