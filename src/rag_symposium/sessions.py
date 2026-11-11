@@ -8,10 +8,10 @@ workshop corpus. No model is involved, nothing leaves the computer, and the
 original session files are only read, never changed.
 
 Two modes show why chunking matters:
-- raw: every message, tool call and tool output. Long and noisy.
-- summary: one short page per session built from its messages. The full
-  transcript is kept next to it in a transcripts/ folder that search does not
-  read, and the summary names that file.
+- summary (the default): one short page per session built from its messages.
+  The full transcript is kept next to it in a transcripts/ folder that search
+  does not read, and the summary names that file.
+- raw: every message, tool call and tool output, all searched. Long and noisy.
 
 Likely secrets (API keys, tokens, private keys, card numbers) are replaced with
 [REDACTED] before anything is written.
@@ -617,7 +617,7 @@ def render(item: dict, mode: str, taken: set, transcript: str | None = None) -> 
     return doc_id, content, redactions
 
 
-def build(home: Path, out: Path, output: Path, mode: str = "raw", since: float | None = None,
+def build(home: Path, out: Path, output: Path, mode: str = "summary", since: float | None = None,
           tools: list[str] | None = None, max_sessions: int | None = None,
           exports: list[Path] = (), now: datetime | None = None) -> dict:
     """Find sessions, write one document each to out, and publish them to output."""
@@ -678,9 +678,9 @@ def main():
     """Parse options, build the session documents and print a plain-English report."""
     parser = argparse.ArgumentParser(
         description="Turn your AI-agent session history into searchable documents")
-    parser.add_argument("--mode", choices=("raw", "summary"), default="raw",
-                        help="raw: every message and tool output (default); summary: one short page per session, "
-                             "with the full transcript kept beside it in a transcripts folder that is not searched")
+    parser.add_argument("--mode", choices=("summary", "raw"), default="summary",
+                        help="summary (default): one short page per session, with the full transcript kept beside it "
+                             "in a transcripts folder that is not searched; raw: every message and tool output, all searched")
     parser.add_argument("--since", type=float, metavar="DAYS",
                         help="Only sessions active in the last DAYS days (default: all)")
     parser.add_argument("--tools", default=",".join(TOOLS),

@@ -222,8 +222,9 @@ class EndToEndTests(SessionTestCase):
         kept = self.folder / "sessions" / "transcripts"
         kept.mkdir(parents=True)
         (kept / "SESSION-OLD-2020-01-01-000000.md").write_text("left from an earlier run")
-        printed = self.run_command(home, "--out", str(out), "--output", str(output), "--mode", "summary",
-                                   "--tools", "claude,codex")
+        # No --mode: summary is the default.
+        printed = self.run_command(home, "--out", str(out), "--output", str(output), "--tools", "claude,codex")
+        self.assertIn("Wrote 2 documents (summary mode)", printed)
         self.assertIn(f"Kept 2 full transcripts in {kept.as_posix()}", printed)
         summaries, transcripts = sorted(out.glob("*.md")), sorted(kept.glob("*.md"))
         self.assertEqual([p.name for p in summaries], [p.name for p in transcripts])
@@ -237,7 +238,7 @@ class EndToEndTests(SessionTestCase):
         self.assertEqual(RecordStore(output, "bm25").status()["record_count"], 2)
         # Raw mode writes no transcripts folder of its own.
         other = self.folder / "raw" / "docs"
-        self.run_command(home, "--out", str(other), "--output", str(output), "--tools", "claude")
+        self.run_command(home, "--out", str(other), "--output", str(output), "--tools", "claude", "--mode", "raw")
         self.assertFalse((self.folder / "raw" / "transcripts").exists())
 
     def test_full_run_publishes_searchable_records(self):
@@ -249,7 +250,7 @@ class EndToEndTests(SessionTestCase):
         out, output = self.folder / "docs", self.folder / "data" / "sessions.jsonl"
         out.mkdir()
         (out / "SESSION-OLD-2020-01-01-000000.md").write_text("left from an earlier run")
-        printed = self.run_command(home, "--out", str(out), "--output", str(output),
+        printed = self.run_command(home, "--out", str(out), "--output", str(output), "--mode", "raw",
                                    "--export", str(FIXTURES / "exports" / "chatgpt" / "conversations.json"))
         for line in ("Claude Code  1", "Codex        1", "OpenCode     2", "Gemini CLI   1", "ChatGPT      1",
                      "Wrote 6 documents (raw mode)", "Redacted 2 likely secrets",
@@ -268,7 +269,7 @@ class EndToEndTests(SessionTestCase):
 
         # The same sessions get the same documents; --tools and --max-sessions narrow them.
         again = self.folder / "again"
-        self.run_command(home, "--out", str(again), "--output", str(output),
+        self.run_command(home, "--out", str(again), "--output", str(output), "--mode", "raw",
                          "--export", str(FIXTURES / "exports" / "chatgpt" / "conversations.json"))
         self.assertEqual([p.read_text(encoding="utf-8") for p in sorted(again.glob("*.md"))],
                          [p.read_text(encoding="utf-8") for p in documents])

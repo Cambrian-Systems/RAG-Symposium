@@ -125,8 +125,9 @@ Turn my AI sessions on this laptop into a searchable collection.
 Your agent runs `uv run rag-sessions`. It finds the sessions your AI agents
 saved on this laptop (Claude Code, Codex, OpenCode, Gemini CLI), replaces
 anything that looks like a password or key with `[REDACTED]`, writes one
-document per session and loads them into the `sessions` search tools. Nothing
-leaves your laptop. If you use one of those agents, you have at least today's
+short summary per session, keeps each full transcript beside it in
+`sessions/transcripts/`, and loads the summaries into the `sessions` search
+tools. Nothing leaves your laptop. If you use one of those agents, you have at least today's
 setup session. If it finds none (Cursor and Copilot keep their history
 somewhere else), pair with a neighbour or load a chatbot export (below).
 Then start a new session, so the `sessions` tools see the new data, and ask:
@@ -138,10 +139,14 @@ What went wrong during setup today, and how did we fix it?
 Then ask your own: a decision you made, a prompt you wish you'd kept,
 something from last month.
 
-Then try the summary layer and ask the same question again:
+A summary finds the session. For the details, ask your agent to open the full
+transcript for that session.
+
+To see why the summaries are what gets searched, try the raw layer and ask the
+same question again:
 
 ```text
-Rebuild my sessions in summary mode, then ask the same question again.
+Rebuild my sessions in raw mode, then ask the same question again.
 ```
 
 Web chatbots (ChatGPT, Claude, Gemini) keep your history on their servers.
@@ -154,9 +159,8 @@ in `sessions/docs/` before you share anything.
 
 Fallback: `uv run rag-sessions`, then
 `uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25`.
-`uv run rag-sessions --mode summary` writes one short page per session, keeps
-each full transcript in `sessions/transcripts/` (not searched) and names that
-file in the summary. `uv run rag-sessions --export path/to/export.zip` loads a
+`uv run rag-sessions --mode raw` searches every message and tool output instead
+of the summaries. `uv run rag-sessions --export path/to/export.zip` loads a
 chatbot export.
 
 ## Your own documents (if there is time)

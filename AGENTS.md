@@ -38,11 +38,12 @@ Where things are:
 - **Trying a search by hand:** `uv run rag-search "question" --mode bm25`.
 - **Searching your own AI sessions:** `uv run rag-sessions` turns this
   computer's Claude Code, Codex, OpenCode and Gemini CLI sessions (and, with
-  `--export PATH`, a ChatGPT or Claude.ai export) into documents in
-  `sessions/docs/` and publishes `data/sessions.jsonl`, with likely secrets
-  redacted. `--mode summary` writes one short page per session and keeps each
-  full transcript in `sessions/transcripts/`, which search does not read; the
-  summary names that file, so open it when the user asks for details. Search it with
+  `--export PATH`, a ChatGPT or Claude.ai export) into one short summary page
+  per session in `sessions/docs/` and publishes them to `data/sessions.jsonl`,
+  with likely secrets redacted. It keeps each full transcript in
+  `sessions/transcripts/`, which search does not read; each summary names that
+  file, so open it when the user asks for details. `--mode raw` searches every
+  message and tool output instead. Search it with
   `uv run rag-search "question" --data data/sessions.jsonl --mode bm25`, or
   through the `sessions` search server (in `opencode.jsonc`, or in the agent's
   own MCP settings; see `mcp.example.json`). Show its report unchanged. If it

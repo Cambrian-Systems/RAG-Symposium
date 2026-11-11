@@ -502,22 +502,24 @@ To replace the workshop corpus instead, put the files in `corpus/docs/`, run
 ## Search your own AI sessions
 
 `rag-sessions` reads the session history coding agents keep on this computer
-(Claude Code, Codex, OpenCode, Gemini CLI), writes one document per session to
-`sessions/docs/` in the same format as the corpus, and publishes them to
-`data/sessions.jsonl`. Both stay on this computer and off Git.
+(Claude Code, Codex, OpenCode, Gemini CLI), writes one short summary page per
+session to `sessions/docs/` in the same format as the corpus, and publishes
+them to `data/sessions.jsonl`. Each full transcript is kept in
+`sessions/transcripts/`, which search does not read. All of it stays on this
+computer and off Git.
 
 ```sh
 uv run rag-sessions
 uv run rag-search "what went wrong during setup?" --data data/sessions.jsonl --mode bm25
-uv run rag-sessions --mode summary
+uv run rag-sessions --mode raw
 uv run rag-sessions --tools claude,codex --since 7 --max-sessions 50
 uv run rag-sessions --export ~/Downloads/chatgpt-export.zip --tools chatgpt
 ```
 
 | Option | Effect |
 | --- | --- |
-| `--mode raw` (default) | Every message, each tool call as one line (`[tool: Bash] uv sync --locked`), and tool output; a page marker about every 3,000 characters |
-| `--mode summary` | One short page per session: title, tool, date, number of turns, your first message, your other messages cut short, and the agent's final message. Each full transcript is kept in `sessions/transcripts/`, which search does not read, and the summary names that file |
+| `--mode summary` (default) | One short page per session: title, tool, date, number of turns, your first message, your other messages cut short, and the agent's final message. Each full transcript is kept in `sessions/transcripts/`, which search does not read, and the summary names that file |
+| `--mode raw` | Every message, each tool call as one line (`[tool: Bash] uv sync --locked`), and tool output; a page marker about every 3,000 characters |
 | `--since DAYS` | Only sessions active in the last DAYS days (default: all) |
 | `--tools` | Comma-separated: `claude`, `codex`, `opencode`, `gemini`, `chatgpt`, `claude-ai` (default: all) |
 | `--max-sessions N` | Keep the N most recent sessions |
@@ -530,8 +532,8 @@ secrets (`sk-` and `ghp_` keys, AWS key IDs, Bearer tokens, private keys,
 before anything is written; the report says how many. That is a pattern match,
 not a guarantee: read a few documents before you share any. Thinking text and
 sub-agent sessions are left out. Raw transcripts are long, and their tool
-output tends to crowd the actual conversation out of search results; compare
-the same question against `--mode summary`.
+output tends to crowd the actual conversation out of search results, which is
+why summary is the default; compare the same question with `--mode raw`.
 
 [opencode.jsonc](opencode.jsonc) also starts a second server, `sessions`, that
 serves `data/sessions.jsonl` with `bm25` search.
